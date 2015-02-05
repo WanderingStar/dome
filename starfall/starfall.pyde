@@ -17,11 +17,17 @@ class Star:
         self.theta = theta
         self.tailLength = tailLength
         self.speed = speed
-    def headPoint(self):
-        return Point.fromPolar(self.head, self.theta)
-    def tailPoint(self):
-        tail = max(0, self.head - self.tailLength)
-        return Point.fromPolar(tail, self.theta)
+    def display(self):
+        with pushMatrix():
+            rotate(self.theta)
+            translate(self.head, 0)
+            s = sqrt(self.speed)
+            with pushStyle():
+                noStroke()
+                with pushStyle():
+                    fill(255,255,255, 127)
+                    triangle(0, s/2, 0, -s/2, -self.tailLength, 0)
+                ellipse(0, 0, s, s)
     def step(self):
         self.head += self.speed
 
@@ -41,15 +47,12 @@ def draw():
     
     edge = max(width, height)
     
-    while len(stars) < 1000:
+    while len(stars) < 10000:
         distance = random(edge/100)
         stars.append(Star(random(2 * PI), distance, distance))
     
-    stroke('#FFFFFF')
     for star in stars:
-        head = star.headPoint()
-        tail = star.tailPoint()
-        line(head.x, head.y, tail.x, tail.y)
+        star.display()
         star.step()
     stars = [s for s in stars if s.head < edge]
 
