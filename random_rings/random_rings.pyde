@@ -12,7 +12,7 @@ class Ring:
         self.t = thickness
         self.pat = pattern
         self.c = c
-        self.r = rotation
+        self.r = rotations
         self.z = zoom
         self.angle = 0
     def display(self):
