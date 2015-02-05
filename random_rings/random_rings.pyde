@@ -1,19 +1,23 @@
 saveFrames = False
 waitForClick = False
-frameLimit = None
+frameLimit = 900
+n = 20
 rings = []
+rate = 10
+h = 0
 
 class Ring:
-    def __init__(self, centerRadius, thickness, pattern=[1], c=color(255,255,255,128), speed=0):
+    def __init__(self, centerRadius, thickness, pattern=[1], c=color(255,255,255,128), rotation=0, zoom=0):
         self.cR = centerRadius
         self.t = thickness
         self.pat = pattern
         self.c = c
-        self.s = speed
-        self.rotation = 0
+        self.r = rotation
+        self.z = zoom
+        self.angle = 0
     def display(self):
         sweep = 2 * PI / len(self.pat)
-        s = self.rotation
+        s = self.angle
         e = s + sweep
         with pushStyle():
             stroke(self.c)
@@ -26,7 +30,8 @@ class Ring:
                 s = e
                 e += sweep
     def step(self):
-        self.rotation += self.s
+        self.angle += self.r
+        self.cR += self.z
 
 def setup():
     if saveFrames:
@@ -38,15 +43,21 @@ def setup():
         noLoop()
     
     colorMode(HSB, 360)
-    maxR = dist(0,0, width,height)
-    r = 50
-    while r < maxR:
-        c = color(random(360), 360, 360)
-        pattern = [int(random(2)) for i in range(random(24)+1)]
-        print(pattern)
-        rings.append(Ring(r, 20, pattern, c, random(PI/24)))
-        r += 50
     
+    maxR = dist(0,0, width,height)
+    r = maxR / n
+    radius = r / 2
+    while len(rings) < n:
+        h = (h + random(30)) % 360
+        c = color(h, 360, 360)
+        rings.append(Ring(maxR - radius, .40 * r, randomPattern(), c, random(PI/24), r / rate))
+        radius += r
+    
+def randomPattern():
+    #pattern =  [1] + [int(random(2)) for i in range(random(24)+1)]
+    pattern = [1, 0] * int(random(10) + 1) #+ [0] * int(random(5))
+    print(pattern)
+    return pattern
         
 def draw():
     translate(width/2, height/2) # center origin
@@ -56,9 +67,20 @@ def draw():
     for ring in rings:
         ring.display()
         ring.step()
+    
+    if frameCount % rate == 0:
+        rings.pop(0)
+        maxR = dist(0,0, width,height)
+        r = maxR / n
+        radius = r / 2
+        h = (h + random(30)) % 360
+        c = color(h, 360, 360)
+        rings.append(Ring(radius, .40 * r, randomPattern(), c, random(PI/15) - PI/30, r / rate))
+        radius += r
 
     if saveFrames:
-        saveFrame()
+        saveFrame("frames/####.png")
+        print("Frame {}".format(frameCount))
     if frameLimit and frameCount >= frameLimit:
         noLoop()
         

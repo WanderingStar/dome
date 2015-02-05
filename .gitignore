@@ -1,5 +1,6 @@
 .DS_Store
 *.tif
+frames
 applet
 application.linux32
 application.linux64
