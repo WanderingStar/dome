@@ -2,11 +2,14 @@ saveFrames = True
 waitForClick = False
 frameLimit = 0 #900
 
-count = 5  # random(12)
-spacing = 20 # 5 * int(random(4) + 1)
-startingHue = 55 # random(360)
+count = 12  # random(12)
+spacing = 10 # 5 * int(random(4) + 1)
+startingHue = 0     # random(360)
 newByRow = True # this distributes seeds more evenly
-upwardPercentage = 1
+upwardPercentage = 10
+crashPercentage = 10
+alphaBeam = 60 # / 360
+luminanceBeam = 300 # / 360
 
 grid = None
 yRes = 60
@@ -69,7 +72,7 @@ def step_spark(spark, grid):
         if y == 0 or cell(up(spark)):
             # boxed in
             return None
-        if random(100) < 25:
+        if random(100) < crashPercentage:
             # via
             return None
         # dodge up
@@ -97,7 +100,7 @@ def trace(p1, p2):
         t2 = theta(p2[0], p1[1])
         if t2 == 0:
             t2 = TAU
-        fill(0, 360, 360, 0)
+        #fill(0, 360, 360, 0)
         arc(0,0, r,r, t1,t2)
     else:
         (x1, y1) = locate(p1)
@@ -150,6 +153,7 @@ def draw():
     
     for i, (spark, c) in enumerate(sparks):
         stroke(c)
+        fill(hue(c), 360, luminanceBeam, alphaBeam)
         next = step_spark(spark, grid)
         #print "%d %s -> %s" % (i, spark, next)
         if next:
