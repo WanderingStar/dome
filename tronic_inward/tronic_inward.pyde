@@ -2,10 +2,11 @@ saveFrames = True
 waitForClick = False
 frameLimit = 0 #900
 
-count = 12  # random(12)
-spacing = 5 # 5 * int(random(4) + 1)
-startingHue = 60 # random(360)
-newByRow = False # this distributes seeds more evenly
+count = 5  # random(12)
+spacing = 20 # 5 * int(random(4) + 1)
+startingHue = 55 # random(360)
+newByRow = True # this distributes seeds more evenly
+upwardPercentage = 1
 
 grid = None
 yRes = 60
@@ -35,6 +36,11 @@ def down(p):
     #print "%d/%d %f => %d/%d %f" % (x, len(grid[y]), float(x)/len(grid[y]), nx, len(grid[y+1]), float(nx)/len(grid[y+1]))
     return (nx, y+1)
 
+def up(p):
+    x, y = p
+    nx = min(len(grid[y-1]) - 1, ceil((float(x) / len(grid[y]) * len(grid[y-1]))))
+    return (nx, y-1)
+
 def new_spark(grid):
     gaps = []
     byRow = []
@@ -46,28 +52,28 @@ def new_spark(grid):
                 rowGaps.append((x, y))
         if rowGaps:
             byRow.append(rowGaps)
-    if newByRow and byRow:
-        row = byRow[int(random(len(byRow)))]
+    if byRow:
+        row = byRow[-1]
         return row[int(random(len(row)))]
     if gaps:
-        return gaps[int(random(len(gaps)/1000))]
+        return gaps[-1]
     print "Done."
 
 def step_spark(spark, grid):
     x, y = spark
-    if y < yRes - 1 and not cell(down(spark)):
-        # 10% chance move down
-        if random(100) < 10:
-            return down(spark)
+    if y > 0 and not cell(up(spark)):
+        # 10% chance move up
+        if random(100) < upwardPercentage:
+            return up(spark)
     if cell(right(spark)):
-        if y == yRes - 1 or cell(down(spark)):
+        if y == 0 or cell(up(spark)):
             # boxed in
             return None
         if random(100) < 25:
             # via
             return None
-        # dodge down
-        return down(spark)
+        # dodge up
+        return up(spark)
     return right(spark)
 
 
@@ -129,18 +135,10 @@ def setup():
         grid.append([0 for x in range(t)])
     
     h = startingHue
-    c = color(h, 360, 360)
-    p = (0, 0)
-    put(p, 1)
-    sparks.append([p, c])
-    stroke(c)
-    via(p)
-    
-    while len(sparks) < count:
-        p = new_spark(grid)
-        h = (h + float(360)/count) % 360
-        c = color(h, 360, 360)
-        put(p, len(sparks) + 1)
+    for i in range(count):
+        c = color((startingHue + i * float(360)/count) % 360, 360, 360)
+        p = (i * (len(grid[-1]) - 1)/ count, yRes - 1)
+        put(p, i+1)
         sparks.append([p, c])
         stroke(c)
         via(p)
