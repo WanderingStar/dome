@@ -2,14 +2,14 @@ saveFrames = True
 waitForClick = False
 frameLimit = 0 #900
 
-count = 12  # random(12)
-spacing = 10 # 5 * int(random(4) + 1)
+count = 7  # random(12)
+spacing = 20 # 5 * int(random(4) + 1)
 startingHue = 0     # random(360)
 newByRow = True # this distributes seeds more evenly
 upwardPercentage = 10
 crashPercentage = 10
 alphaBeam = 60 # / 360
-luminanceBeam = 300 # / 360
+luminanceBeam = 360 # / 360
 
 grid = None
 yRes = 60
@@ -55,7 +55,7 @@ def new_spark(grid):
                 rowGaps.append((x, y))
         if rowGaps:
             byRow.append(rowGaps)
-    if byRow:
+    if newByRow and byRow:
         row = byRow[-1]
         return row[int(random(len(row)))]
     if gaps:
