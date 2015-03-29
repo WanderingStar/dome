@@ -2,28 +2,18 @@ saveFrames = False
 waitForClick = False
 frameLimit = 0 #900
 
-count = int(random(12) + 1)
-spacing = 5 * int(random(4) + 1)
-startingHue = random(360)
-inOut = random(3)
-inwards = inOut < 1
-outwards = inOut > 2
-newByRow = True # this distributes seeds more evenly
-if random(10) < 1:
-    upwardPercentage = 5 * int(random(21))
-    downwardPercentage = min(5 * int(random(21)), 100-upwardPercentage)
-else:
-    upwardPercentage = 5 * int(random(5))
-    downwardPercentage = 5 * int(random(5))
-crashPercentage = 10 * int(random(11))
-alphaBeam = 0 # / 360
-luminanceBeam = 360 # / 360
-rightPercentage = 10 * int(random(11))
-
-print "count\tsize\thue\tdir\tup%\tdn%\tcrash%\tright%"
-print "%d\t%d\t%d\t%s\t%d\t%d\t%d\t%d" % (
-    count, spacing, startingHue, (inwards and "in") or (outwards and "out") or "rnd", 
-    upwardPercentage, downwardPercentage, crashPercentage, rightPercentage)
+count = 6
+spacing = 10
+startingHue = 0
+inwards = True
+ourtwards = False
+newByRow = True
+upwardPercentage = 10
+downwardPercentage = 5
+crashPercentage = 30
+alphaBeam = 0
+luminanceBeam = 360
+rightPercentage = 0
 
 # count 1  size 5  hue 211  out  up% 20  dn% 15  crash% 30  right% 90
 # count 12  size 5  hue 235  in  up% 0  dn% 15  crash% 20  right% 80
@@ -198,12 +188,45 @@ def setup():
     strokeCap(ROUND)
     fill(0)
     
+    reset()
+
+
+def reset():
+    global count, spacing, inwards, outwards, rightPercentage, newByRow
+    global upwardPercentage, downwardPercentage, crashPercentage
+    global startingHue, alphaBeam, luminanceBeam
+    global yRes, grid, sparks
+    
+    count = int(random(12) + 1)
+    spacing = 5 * int(random(4) + 1)
+    startingHue = random(360)
+    inOut = random(3)
+    inwards = inOut < 1
+    outwards = inOut > 2
+    newByRow = True # this distributes seeds more evenly
+    if random(10) < 1:
+        upwardPercentage = 5 * int(random(21))
+        downwardPercentage = min(5 * int(random(21)), 100-upwardPercentage)
+    else:
+        upwardPercentage = 5 * int(random(5))
+        downwardPercentage = 5 * int(random(5))
+    crashPercentage = 10 * int(random(11))
+    alphaBeam = 0 # / 360
+    luminanceBeam = 360 # / 360
+    rightPercentage = 10 * int(random(11))
+    
+    print "count\tsize\thue\tdir\tup%\tdn%\tcrash%\tright%"
+    print "%d\t%d\t%d\t%s\t%d\t%d\t%d\t%d" % (
+        count, spacing, startingHue, (inwards and "in") or (outwards and "out") or "rnd", 
+        upwardPercentage, downwardPercentage, crashPercentage, rightPercentage)
+    
     yRes = height / spacing / 4
     grid = []
     for y in range(yRes):
         t = ticks(y * spacing)
         grid.append([0 for x in range(t)])
     
+    sparks = []
     h = startingHue
     for i in range(count):
         c = color((startingHue + i * float(360)/count) % 360, 360, 360)
@@ -220,10 +243,24 @@ def setup():
         stroke(c)
         via(p)
 
+clearFrames = 0
     
 def draw():
     translate(width/2, height/2) # center origin
     rotate(-PI/2) # 0 radians is up
+    
+    global clearFrames
+    if clearFrames > 1:
+        pushStyle()
+        fill(0,0,0,5)
+        noStroke()
+        rect(-width/2, -height/2, width, height)
+        popStyle()
+        clearFrames -= 1
+        return
+    if clearFrames == 1:
+        reset()
+        clearFrames = 0
     
     for i, (spark, c, d) in enumerate(sparks):
         stroke(c)
@@ -242,7 +279,7 @@ def draw():
             if next:
                 via(next)
         if not next:
-            noLoop()
+            clearFrames = 150
         else:
             (x, y) = next
             put(next, i+1)
