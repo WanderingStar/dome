@@ -177,6 +177,8 @@ def setup():
     else:
         frameRate(30)
         size(800, 800)
+        if frame:
+            frame.setResizable(True)
     background(0)
     if waitForClick:
         noLoop()
