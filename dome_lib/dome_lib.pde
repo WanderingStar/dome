@@ -14,10 +14,10 @@ float angle = 0;
 
 void setup()
 {
-  //size(1920, 1080, P3D);
+  size(1920, 1080, P3D);
   //size(1280, 720, P3D);
   //size(854, 480, P3D);
-  size(960, 540, P3D);
+  //size(960, 540, P3D);
   
   
   // set up source buffer for the actual frame data

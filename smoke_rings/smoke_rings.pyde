@@ -1,4 +1,4 @@
-saveFrames = True
+saveFrames = False
 waitForClick = False
 frameLimit = 1200
 n = 20
@@ -36,7 +36,7 @@ def setup():
     if saveFrames:
         size(1920, 1080, "processing.core.PGraphicsRetina2D")
     else:
-        size(960, 540, "processing.core.PGraphicsRetina2D")
+        size(1920, 1080)
     background(0)
     if waitForClick:
         noLoop()
@@ -75,6 +75,8 @@ def draw():
         print("Frame {} Rings {}".format(frameCount, len(rings)))
     if frameLimit and frameCount >= frameLimit:
         noLoop()
+        
+    print("{}\n".format(frameRate));
         
 def mouseClicked():
     if waitForClick:

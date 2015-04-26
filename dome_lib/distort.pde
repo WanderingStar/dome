@@ -9,13 +9,15 @@ class DomeDistort
   
   // projection values
   float aspect;
-  float fov_angle = radians(25.0); // vertical fov in radians
-  float offset = 1.1; // vertical screen offset
+  float fov_angle = radians(40.8/2); // vertical fov in radians
+  float offset = 1.05; // vertical screen offset
   
   // units are in inches
-  float r_radius = 13.0; // reflector radius
+  float r_radius = 12.5; // reflector radius
   float d_radius = 100.75; // large dome radius
-  float p_distance = 26.0; // projector distance from center of reflector
+  
+  float r_distance = 24.0; // distance between dome edge and center of reflector
+  float p_distance = 36.0; // projector distance from center of reflector
 
   // reflector subdivision
   int divs = 64;
@@ -31,9 +33,9 @@ class DomeDistort
     distort_shader = loadShader("distort_frag.glsl", "distort_vert.glsl");
     
     // geometry configuration
-    distort_shader.set("p_pos", 0, 0, -d_radius + p_distance);
+    distort_shader.set("p_pos", 0, 0, -d_radius + r_distance + p_distance);
     
-    distort_shader.set("r_pos", 0.0, 0.0, -d_radius);
+    distort_shader.set("r_pos", 0.0, 0.0, -d_radius + r_distance);
     distort_shader.set("r_radius", r_radius);
     
     distort_shader.set("d_radius", d_radius);

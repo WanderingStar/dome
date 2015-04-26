@@ -1,6 +1,6 @@
-saveFrames = False
+saveFrames = True
 waitForClick = False
-frameLimit = 900
+frameLimit = 0 #900
 n = 20
 rings = []
 rate = 10
@@ -12,7 +12,7 @@ class Ring:
         self.t = thickness
         self.pat = pattern
         self.c = c
-        self.r = rotations
+        self.r = rotation
         self.z = zoom
         self.angle = 0
     def display(self):
@@ -35,9 +35,10 @@ class Ring:
 
 def setup():
     if saveFrames:
-        size(1920, 1080, "processing.core.PGraphicsRetina2D")
+        size(1024, 1024, P3D)
     else:
-        size(960, 540, "processing.core.PGraphicsRetina2D")
+        frameRate(30)
+        size(1024, 1024, P3D)
     background(0)
     if waitForClick:
         noLoop()
@@ -80,7 +81,7 @@ def draw():
 
     if saveFrames:
         saveFrame("frames/####.png")
-        print("Frame {}".format(frameCount))
+        print("Frame {}/{} @ {} fps".format(frameCount, frameLimit, frameRate))
     if frameLimit and frameCount >= frameLimit:
         noLoop()
         

@@ -1,4 +1,8 @@
-saveFrames = False
+add_library('gifAnimation')
+from gifAnimation import GifMaker
+
+saveFrames = True
+maker = None
 waitForClick = False
 frameLimit = 0 #900
 
@@ -172,8 +176,11 @@ def via(p):
     
 
 def setup():
+    global maker
     if saveFrames:
-        size(1024, 1024)
+        size(200, 200)
+        maker = GifMaker(this, "output.gif")
+        maker.setRepeat(0)
     else:
         frameRate(30)
         size(800, 800)
@@ -199,9 +206,9 @@ def reset():
     global startingHue, alphaBeam, luminanceBeam
     global yRes, grid, sparks
     
-    count = int(random(12) + 1)
-    spacing = 5 * int(random(4) + 1)
-    startingHue = random(360)
+    count = 6 # int(random(12) + 1)
+    spacing = 5 # 5 * int(random(4) + 1)
+    startingHue = 0 # random(360)
     inOut = random(3)
     inwards = inOut < 1
     outwards = inOut > 2
@@ -261,8 +268,13 @@ def draw():
         clearFrames -= 1
         return
     if clearFrames == 1:
-        reset()
-        clearFrames = 0
+        if saveFrames:
+            maker.finish()
+            noLoop()
+            return
+        else:
+            reset()
+            clearFrames = 0
     
     for i, (spark, c, d) in enumerate(sparks):
         stroke(c)
@@ -289,7 +301,8 @@ def draw():
         sparks[i][0] = next
 
     if saveFrames:
-        saveFrame("frames/####.png")
+        maker.addFrame()
+        maker.setDelay(int(1000.0/30.0))
         print("Frame {}/{} @ {} fps".format(frameCount, frameLimit, frameRate))
     if frameLimit and frameCount >= frameLimit:
         noLoop()
