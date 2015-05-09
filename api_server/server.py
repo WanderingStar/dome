@@ -1,5 +1,6 @@
 import flask
 from flask import Flask, jsonify, request
+import pymongo
 from pymongo import MongoClient
 import json
 
@@ -76,12 +77,26 @@ def keywords():
 def history():
     # return the list of images that have been shown, and for how long
     #if request.json and request.json['
-    pass
+    offset = arg(request, 'offset', 0)
+    limit = arg(request, 'limit', 10)
+    if request.method == 'POST':
+        if request.json:
+            db.history.insert(request.json)
+    results = list(db.history.find({}, {'_id':0})
+                        .sort('end', pymongo.DESCENDING)
+                        .skip(offset).limit(limit))
+    return jsonify({'history': results})
 
 @app.route("/play", methods=['POST', 'GET'])
 def play():
-    # set/get the keywords which will drive the display
-    pass
+    # set/get the keywords which will drive the display, use - to clear the keywords with a get
+    keywords = arg(request, 'keywords')
+    if keywords:
+        if keywords == ['-']:
+            db.playing.replace_one({}, {'keywords': []}, upsert=True)
+        else:
+            db.playing.replace_one({}, {'keywords': list(keywords)}, upsert=True)
+    return jsonify(db.playing.find_one({}, {'_id': 0}))
 
 @app.after_request
 def add_cors(resp):
