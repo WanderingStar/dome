@@ -82,10 +82,13 @@ def history():
     if request.method == 'POST':
         if request.json:
             db.history.insert(request.json)
-    results = list(db.history.find({}, {'_id':0})
-                        .sort('end', pymongo.DESCENDING)
-                        .skip(offset).limit(limit))
-    return jsonify({'history': results})
+    history = []
+    for played in db.history.find({}, {'_id':0}) \
+                        .sort('end', pymongo.DESCENDING) \
+                        .skip(offset).limit(limit):
+        played['post'] = db.post.find_one({'id': int(played['id'])}, {'_id':0})
+        history.append(played)
+    return jsonify({'history': history})
 
 @app.route("/play", methods=['POST', 'GET'])
 def play():
