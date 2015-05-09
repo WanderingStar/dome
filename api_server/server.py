@@ -7,12 +7,17 @@ app = Flask(__name__)
 db = MongoClient().project
 
 def arg(request, name, default=None):
-    args = request.json or request.args
-    value = args.get(name, default)
+    if request.json:
+        return request.json.get(name, default)
+    query_param = request.args.get(name)
+    if not query_param:
+        return default
     try:
-        return int(value)
-    except (ValueError, TypeError):
-        return value
+        return int(query_param)
+    except ValueError:
+        if query_param.find(","):
+            return query_param.split(",")
+        return query_param
 
 @app.route("/")
 def homepage():
@@ -29,14 +34,14 @@ def post_keywords(post_id):
     post = db.post.find_one({'id': post_id}, {'_id':0})
     if not post:
         abort(404)
-    keywords = arg(request, 'keywords')
+    keywords = list(arg(request, 'keywords', []))
     if keywords:
         db.post.update({'id': post_id}, {'$set': {'keywords' : keywords}})
     return jsonify(db.post.find_one({'id': post_id}, {'keywords':1, '_id':0}))
 
 @app.route("/posts", methods=['POST', 'GET'])
 def posts():
-    keywords = arg(request, 'keywords')
+    keywords = list(arg(request, 'keywords', []))
     offset = arg(request, 'offset', 0)
     limit = arg(request, 'limit', 10)
 
@@ -45,9 +50,9 @@ def posts():
         query = {'keywords': {'$all': keywords}}
     posts = list(db.post.find(query, {'_id':0}).sort('id').skip(offset).limit(limit))
     count = db.post.find(query).count()
-    keywords = keyword_counts(keywords)
+    k_c = keyword_counts(keywords)
     # app.logger.debug(posts)
-    return jsonify({'posts': posts, 'count': count, 'keywords': keywords})
+    return jsonify({'posts': posts, 'count': count, 'keywords': k_c})
 
 def keyword_counts(keywords=None):
     # return keyword->post count, limited to posts matching all of the given keywords
