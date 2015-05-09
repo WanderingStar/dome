@@ -3,6 +3,7 @@ from flask import Flask, jsonify, request
 import pymongo
 from pymongo import MongoClient
 import json
+import time
 
 app = Flask(__name__)
 db = MongoClient().project
@@ -96,16 +97,17 @@ def play():
     keywords = arg(request, 'keywords')
     if keywords:
         if keywords == ['-']:
-            db.playing.replace_one({}, {'keywords': []}, upsert=True)
+            db.playing.replace_one({}, {'keywords': [], 'updated': time.time()}, upsert=True)
         else:
-            db.playing.replace_one({}, {'keywords': sorted(list(keywords))}, upsert=True)
+            db.playing.replace_one({}, {'keywords': sorted(list(keywords)), 'updated': time.time()}, upsert=True)
     playlist = db.playing.find_one({}, {'_id': 0})
     keywords = playlist.get('keywords')
     query = {}
     if keywords:
         query = {'keywords': {'$all': keywords}}
     ids = sorted([d['id'] for d in db.post.find(query, {'id':1, '_id':0})])
-    return jsonify({'keywords': keywords, 'ids': ids})
+    playlist['ids'] = ids
+    return jsonify(playlist)
 
 @app.after_request
 def add_cors(resp):
