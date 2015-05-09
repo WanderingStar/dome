@@ -99,7 +99,13 @@ def play():
             db.playing.replace_one({}, {'keywords': []}, upsert=True)
         else:
             db.playing.replace_one({}, {'keywords': sorted(list(keywords))}, upsert=True)
-    return jsonify(db.playing.find_one({}, {'_id': 0}))
+    playlist = db.playing.find_one({}, {'_id': 0})
+    keywords = playlist.get('keywords')
+    query = {}
+    if keywords:
+        query = {'keywords': {'$all': keywords}}
+    ids = sorted([d['id'] for d in db.post.find(query, {'id':1, '_id':0})])
+    return jsonify({'keywords': keywords, 'ids': ids})
 
 @app.after_request
 def add_cors(resp):
