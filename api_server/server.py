@@ -6,9 +6,17 @@ import json
 app = Flask(__name__)
 db = MongoClient().project
 
+def arg(request, name, default=None):
+    args = request.json or request.args
+    value = args.get(name, default)
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return value
+
 @app.route("/")
 def homepage():
-    return "This is the API server"
+    return "This is the Project API server"
 
 @app.route('/<int:post_id>')
 def show_post(post_id):
@@ -21,21 +29,16 @@ def post_keywords(post_id):
     post = db.post.find_one({'id': post_id}, {'_id':0})
     if not post:
         abort(404)
-    if request.method == 'POST':
-        if 'keywords' in request.json:
-            db.post.update({'id': post_id}, {'$set': {'keywords' : request.json['keywords']}})
+    keywords = arg(request, 'keywords')
+    if keywords:
+        db.post.update({'id': post_id}, {'$set': {'keywords' : keywords}})
     return jsonify(db.post.find_one({'id': post_id}, {'keywords':1, '_id':0}))
 
 @app.route("/posts", methods=['POST', 'GET'])
 def posts():
-    if request.json:
-        keywords = request.json.get('keywords')
-        offset = request.json.get('offset', 0)
-        limit = request.json.get('limit', 10)
-    else:
-        keywords = None
-        offset = 0
-        limit = 10
+    keywords = arg(request, 'keywords')
+    offset = arg(request, 'offset', 0)
+    limit = arg(request, 'limit', 10)
 
     query = {}
     if keywords:
@@ -62,7 +65,18 @@ def keyword_counts(keywords=None):
 
 @app.route("/keywords", methods=['POST', 'GET'])
 def keywords():
-    return jsonify(keyword_counts(request.json and request.json.get('keywords')))
+    return jsonify(keyword_counts(request.json and arg(request, 'keywords')))
+
+@app.route("/history", methods=['POST', 'GET'])
+def history():
+    # return the list of images that have been shown, and for how long
+    #if request.json and request.json['
+    pass
+
+@app.route("/play", methods=['POST', 'GET'])
+def play():
+    # set/get the keywords which will drive the display
+    pass
 
 @app.after_request
 def add_cors(resp):
