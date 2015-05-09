@@ -15,40 +15,54 @@ def show_post(post_id):
     # show the post with the given id, the id is a number
     return jsonify(db.post.find_one({'id': post_id}, {'_id':0}))
 
-@app.route('/<int:post_id>/tags', methods=['POST', 'GET'])
-def post_tags(post_id):
-    # show the post with the given id, the id is a number
-    app.logger.debug("%s form: %s\n    data: %s\n    json: %s" % 
-                     (request.method, json.dumps(request.form), 
-                      json.dumps(request.data), json.dumps(request.json)))
-
+@app.route('/<int:post_id>/keywords', methods=['POST', 'GET'])
+def post_keywords(post_id):
+    # show or set the keywords associated with a post
     post = db.post.find_one({'id': post_id}, {'_id':0})
     if not post:
         abort(404)
-
     if request.method == 'POST':
-        if 'tags' in request.json:
-            db.post.update({'id': post_id}, {'$set': {'tags' : request.json['tags']}})
-    return jsonify(db.post.find_one({'id': post_id}, {'tags':1, '_id':0}))
+        if 'keywords' in request.json:
+            db.post.update({'id': post_id}, {'$set': {'keywords' : request.json['keywords']}})
+    return jsonify(db.post.find_one({'id': post_id}, {'keywords':1, '_id':0}))
 
 @app.route("/posts", methods=['POST', 'GET'])
 def posts():
     if request.json:
-        tags = request.json.get('tags')
+        keywords = request.json.get('keywords')
         offset = request.json.get('offset', 0)
         limit = request.json.get('limit', 10)
     else:
-        tags = None
+        keywords = None
         offset = 0
         limit = 10
 
     query = {}
-    if tags:
-        query = {'tags': {'$all': tags}}
+    if keywords:
+        query = {'keywords': {'$all': keywords}}
     posts = list(db.post.find(query, {'_id':0}).sort('id').skip(offset).limit(limit))
     count = db.post.find(query).count()
-    app.logger.debug(posts)
-    return jsonify({'posts': posts, 'count': count})
+    keywords = keyword_counts(keywords)
+    # app.logger.debug(posts)
+    return jsonify({'posts': posts, 'count': count, 'keywords': keywords})
+
+def keyword_counts(keywords=None):
+    # return keyword->post count, limited to posts matching all of the given keywords
+    pipeline = [
+        {'$project': {'keywords':1}},
+        {'$unwind': '$keywords'},
+        {'$group': {'_id': '$keywords', 'count': {'$sum': 1}}},
+        {'$sort': {'count': -1}}
+    ]
+    if keywords:
+        pipeline.insert(0, {'$match': {'keywords': {'$all': keywords}}})
+    counts = db.post.aggregate(pipeline)
+    key_count = {d['_id']: d['count'] for d in counts}
+    return key_count
+
+@app.route("/keywords", methods=['POST', 'GET'])
+def keywords():
+    return jsonify(keyword_counts(request.json and request.json.get('keywords')))
 
 @app.after_request
 def add_cors(resp):
