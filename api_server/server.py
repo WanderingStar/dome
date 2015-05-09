@@ -98,7 +98,7 @@ def play():
         if keywords == ['-']:
             db.playing.replace_one({}, {'keywords': []}, upsert=True)
         else:
-            db.playing.replace_one({}, {'keywords': list(keywords)}, upsert=True)
+            db.playing.replace_one({}, {'keywords': sorted(list(keywords))}, upsert=True)
     return jsonify(db.playing.find_one({}, {'_id': 0}))
 
 @app.after_request
