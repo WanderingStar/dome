@@ -1,6 +1,18 @@
 {{#each posts}}
-<div class="list-item">
-	<img src="{{photos.0.alt_sizes.2.url}}" />
-
+<div class="list-item js-post" id="{{id}}">
+	<img class="thumbnail" src="{{photos.0.alt_sizes.2.url}}" />
+	<h2>{{slug}}</h2>
+	<h3>Source: {{blog_name}}</h3>
+	<div>
+		{{#each keyword_present}}
+		<input type="checkbox" class="js-tag" id="{{@key}}{{../id}}"
+			value="{{@key}}"
+			{{#if this}}
+				checked="checked"
+			{{/if}}
+		/>
+		<label class="capsule" for="{{@key}}{{../id}}">{{@key}}</label> 
+		{{/each}}
+	</div>
 </div>
 {{/each}}

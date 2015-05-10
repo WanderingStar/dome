@@ -1,18 +1,27 @@
 define(function (require) {
 	var handlebars = require('handlebars/handlebars');
+	var swag = require('swag/lib/swag')
 	var flight = require('flight/index');
-	var templateSource = require('text!template/list-item.hbs');
+	var itemTemplateSource = require('text!template/list-item.hbs');
+
+	Swag.registerHelpers(handlebars);
+
 	function gifList(){
 
 		this.attributes({
-			'dataUrl': 'http://gjoll.local:5000/posts'
+			'urlPrefix': 'http://gjoll.local:5000',
+			'pageSize': 20,
+			'offset': 0,
+			'tagSelector': '.js-tag',
+			'postSelector': '.js-post'
 		}),
 
 		this.getData = function(){
 			var promise = $.ajax({
-				url: this.attr.dataUrl,
+				url: this.attr.urlPrefix + '/posts',
 				data: {
-					offset: 100
+					'offset': this.attr.offset,
+					'limit': this.attr.pageSize
 				},
 				type: 'POST',
 				context: this
@@ -21,14 +30,30 @@ define(function (require) {
 
 		},
 
+		this.updateTag = function(e){
+			var $target = $(e.currentTarget);
+			var postId = $target.closest(this.attr.postSelector).attr('id');
+			var keyword = $target.val();
+			var method = $target.prop( 'checked' ) ? 'PUT' : 'DELETE';
+			var promise = $.ajax({
+				url: this.attr.urlPrefix + '/' + postId + '/keywords',
+				data: keyword,
+				type: method,
+				context: this
+			});
+		},
+
 		this.render = function(results){
-			var template = handlebars.compile(templateSource);
-			this.$node.html( template(results) );
+			var templateItem = handlebars.compile(itemTemplateSource);
+			this.$node.html( templateItem(results) );
 		},
 
 		// after initializing the component
   		this.after('initialize', function() {
 			this.getData();
+			this.on('change', {
+			    tagSelector: this.updateTag
+			});
 		});
 
 	}
