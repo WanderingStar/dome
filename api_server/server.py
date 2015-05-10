@@ -55,7 +55,7 @@ def posts():
     k_c = keyword_counts(keywords)
     for post in posts:
         p_k = set(post.get('keywords',[]))
-        post['keyword_present'] = {k:1 if k in p_k else 0 for k in db.post.distinct('keywords')}
+        post['keyword_present'] = {k:k in p_k for k in db.post.distinct('keywords')}
     # app.logger.debug(posts)
     return jsonify({'posts': posts, 'count': count, 'keywords': k_c})
 
