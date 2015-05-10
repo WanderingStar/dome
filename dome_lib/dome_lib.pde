@@ -3,7 +3,6 @@
 import gifAnimation.*;
 import java.io.File;
 
-PImage tex;
 PGraphics src, targ;
 ArrayList<String> anims = new ArrayList<String>();
 int n = -1;
@@ -11,16 +10,18 @@ Gif anim;
 PImage[] frames;
 int frame = 0;
 DomeDistort dome;
-int targetFrameRate = 15;
+int targetFrameRate = 30;
+boolean invert = false;
 
 float angle = 0;
 
 void setup()
 {
-  //size(1920, 1080, P3D);
+  //size(1024, 1024, P3D);
+  size(1920, 1080, P3D);
   //size(1280, 720, P3D);
   //size(854, 480, P3D);
-  size(960, 540, P3D);
+  //size(960, 540, P3D);
   
   frameRate(targetFrameRate);
   
@@ -32,13 +33,12 @@ void setup()
   
   // create and configure the distortion object
   dome = new DomeDistort(targ, src);
-  dome.setTexExtent(0.9); // set to < 1.0 to shrink towards center of dome
+  //dome.setTexExtent(0.9); // set to < 1.0 to shrink towards center of dome
   dome.setTexRotation(0); // set to desired rotation angle in radians
   
-  // load up some textures
-  tex = loadImage("polargrid.png");
   println(dataPath(""));
   
+  // make list of animations
   File dir = new File(dataPath(""));
   for (String filename : dir.list()) {
     if (filename.endsWith(".gif")) {
@@ -62,6 +62,10 @@ void keyPressed()
 {
   if (key == 'q') {
     noLoop();
+    return;
+  }
+  if (key == 'i') {
+    invert = !invert;
     return;
   }
   if (key == '-') {
@@ -102,11 +106,15 @@ void draw()
   src.beginDraw();
   src.background(0);
   src.tint(255, 255);
+  src.stroke(255);
+  //src.line(width/2, 0, width/2, height);
   drawFullscreenQuad(src, frames[frame]); // draw a frame from the gif
   frame = (frame + 1) % frames.length;
-  // src.tint(255, 25);
-  // drawFullscreenQuad(src, tex); // fade a grid over it
   src.endDraw();
+  
+  //dome.setColorScale(mouseY);
+  dome.setColorTransformInvert(invert ? 1 : 0);
+  //println(mouseY);
   
   // distort into target image
   dome.update();
@@ -116,8 +124,10 @@ void draw()
   image(targ, 0, 0);
   
   // update texture rotation
-  angle += 0.002;
-  dome.setTexRotation(angle);
+  angle += 1.0;//0.002;
+  //dome.setTexRotation(angle);
+  
+  //dome.setColorTransformHSVShift(angle, 1.0, 1.0);
 }
 
 

@@ -21,6 +21,9 @@ uniform float r_radius; // radius of reflector
 // dome info
 uniform float d_radius; // radius of dome
 
+// color modifications
+uniform float c_distscale; // scales brightness based on max distance
+
 // texture modifications
 uniform float t_angle; // rotates the texture around the dome
 uniform float t_extent; // how far down the dome the texture goes (0 - 1)
@@ -51,15 +54,17 @@ void main()
 
 	// emit vertex
 	gl_Position = transform * vec4(prpos.x, -prpos.y, prpos.z, 1.0); // negate y component cause of Processing's frickin' inverted vertical...
-	vertColor = color.xyz;
+	//vertColor = color.xyz;
 
 	// compute the warp
 
 	// initial ray origin and direction
 	vec3 o = wpos;
 	vec3 d = wpos - p_pos;
-	d = normalize(d);
-
+	float dtravel = length(d);
+	d /= dtravel;
+	//d = normalize(d);
+	
 	// bounce direction off reflector (assumes unit radius sphere)
 	d = reflect(d, vertex.xyz);
 
@@ -69,6 +74,10 @@ void main()
 	t = ray_sphere_intersect_far(o, d, d_radius);
 	o += t * d;
 	o /= d_radius;
+
+	dtravel += t;
+	float color_scale = clamp(dtravel/c_distscale, 0.0, 1.0);
+	vertColor = vec3(color_scale);
 
 	// compute texcoords
 	vec2 txc = o.xz;
