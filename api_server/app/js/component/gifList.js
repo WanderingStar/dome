@@ -1,10 +1,7 @@
 define(function (require) {
 	var handlebars = require('handlebars/handlebars');
-	var swag = require('swag/lib/swag')
 	var flight = require('flight/index');
 	var itemTemplateSource = require('text!template/list-item.hbs');
-
-	Swag.registerHelpers(handlebars);
 
 	function gifList(){
 
