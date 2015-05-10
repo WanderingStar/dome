@@ -30,15 +30,22 @@ def show_post(post_id):
     # show the post with the given id, the id is a number
     return jsonify(db.post.find_one({'id': post_id}, {'_id':0}))
 
-@app.route('/<int:post_id>/keywords', methods=['POST', 'GET'])
+@app.route('/<int:post_id>/keywords', methods=['POST', 'GET', 'PUT', 'DELETE'])
 def post_keywords(post_id):
     # show or set the keywords associated with a post
     post = db.post.find_one({'id': post_id}, {'_id':0})
     if not post:
         abort(404)
-    keywords = list(arg(request, 'keywords', []))
-    if keywords:
-        db.post.update({'id': post_id}, {'$set': {'keywords' : keywords}})
+    if request.method == 'PUT':
+        keyword = request.json
+        db.post.update({'id': post_id}, {'$addToSet': {'keywords' : keyword}})
+    elif request.method == 'DELETE':
+        keyword = request.json
+        db.post.update({'id': post_id}, {'$pull': {'keywords' : keyword}})
+    else:
+        keywords = list(arg(request, 'keywords', []))
+        if keywords:
+            db.post.update({'id': post_id}, {'$set': {'keywords' : keywords}})
     return jsonify(db.post.find_one({'id': post_id}, {'keywords':1, '_id':0}))
 
 @app.route("/posts", methods=['POST', 'GET'])
