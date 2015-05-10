@@ -1,7 +1,9 @@
 import flask
 from flask import Flask, jsonify, request
+import pymongo
 from pymongo import MongoClient
 import json
+import time
 
 app = Flask(__name__)
 db = MongoClient().project
@@ -28,15 +30,22 @@ def show_post(post_id):
     # show the post with the given id, the id is a number
     return jsonify(db.post.find_one({'id': post_id}, {'_id':0}))
 
-@app.route('/<int:post_id>/keywords', methods=['POST', 'GET'])
+@app.route('/<int:post_id>/keywords', methods=['POST', 'GET', 'PUT', 'DELETE'])
 def post_keywords(post_id):
     # show or set the keywords associated with a post
     post = db.post.find_one({'id': post_id}, {'_id':0})
     if not post:
         abort(404)
-    keywords = list(arg(request, 'keywords', []))
-    if keywords:
-        db.post.update({'id': post_id}, {'$set': {'keywords' : keywords}})
+    if request.method == 'PUT':
+        keyword = request.json
+        db.post.update({'id': post_id}, {'$addToSet': {'keywords' : keyword}})
+    elif request.method == 'DELETE':
+        keyword = request.json
+        db.post.update({'id': post_id}, {'$pull': {'keywords' : keyword}})
+    else:
+        keywords = list(arg(request, 'keywords', []))
+        if keywords:
+            db.post.update({'id': post_id}, {'$set': {'keywords' : keywords}})
     return jsonify(db.post.find_one({'id': post_id}, {'keywords':1, '_id':0}))
 
 @app.route("/posts", methods=['POST', 'GET'])
@@ -51,6 +60,9 @@ def posts():
     posts = list(db.post.find(query, {'_id':0}).sort('id').skip(offset).limit(limit))
     count = db.post.find(query).count()
     k_c = keyword_counts(keywords)
+    for post in posts:
+        p_k = set(post.get('keywords',[]))
+        post['keyword_present'] = {k:k in p_k for k in db.post.distinct('keywords')}
     # app.logger.debug(posts)
     return jsonify({'posts': posts, 'count': count, 'keywords': k_c})
 
@@ -76,12 +88,36 @@ def keywords():
 def history():
     # return the list of images that have been shown, and for how long
     #if request.json and request.json['
-    pass
+    offset = arg(request, 'offset', 0)
+    limit = arg(request, 'limit', 10)
+    if request.method == 'POST':
+        if request.json:
+            db.history.insert(request.json)
+    history = []
+    for played in db.history.find({}, {'_id':0}) \
+                        .sort('end', pymongo.DESCENDING) \
+                        .skip(offset).limit(limit):
+        played['post'] = db.post.find_one({'id': int(played['id'])}, {'_id':0})
+        history.append(played)
+    return jsonify({'history': history})
 
 @app.route("/play", methods=['POST', 'GET'])
 def play():
-    # set/get the keywords which will drive the display
-    pass
+    # set/get the keywords which will drive the display, use - to clear the keywords with a get
+    keywords = arg(request, 'keywords')
+    if keywords:
+        if keywords == ['-']:
+            db.playing.replace_one({}, {'keywords': [], 'updated': time.time()}, upsert=True)
+        else:
+            db.playing.replace_one({}, {'keywords': sorted(list(keywords)), 'updated': time.time()}, upsert=True)
+    playlist = db.playing.find_one({}, {'_id': 0})
+    keywords = playlist.get('keywords')
+    query = {}
+    if keywords:
+        query = {'keywords': {'$all': keywords}}
+    ids = sorted([d['id'] for d in db.post.find(query, {'id':1, '_id':0})])
+    playlist['ids'] = ids
+    return jsonify(playlist)
 
 @app.after_request
 def add_cors(resp):
