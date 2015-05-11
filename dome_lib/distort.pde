@@ -121,7 +121,7 @@ class DomeDistort
     
     // Hue shift matrix = 
     // RGB_from_YIQ * rotateX(hue) * saturation_scale * value_scale * YIQ_from_RGB
-    c = yiq_from_rgb.get();
+    c = yiq_from_rgb.get();  
     c.rotateX(radians(hue_shift_deg));
     c.scale(1.0, sat_scale, sat_scale);
     c.scale(val_scale);
