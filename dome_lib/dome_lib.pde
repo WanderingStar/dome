@@ -100,6 +100,14 @@ void keyPressed()
     line_mode = !line_mode;
     return;
   }
+  if (key == CODED && keyCode == LEFT) {
+    nextAnim(-1);
+    return;
+  }
+  if (key == CODED && keyCode == RIGHT) {
+    nextAnim(1);
+    return;
+  }
   
   // fall through to move to the next animation
   nextAnim(1);
