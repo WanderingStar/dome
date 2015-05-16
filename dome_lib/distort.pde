@@ -63,7 +63,6 @@ class DomeDistort
     // defaults for color params
     distort_shader.set("c_matrix", new PMatrix3D());
     distort_shader.set("c_distscale", 160.0);
-    distort_shader.set("c_scale", 1.0, 1.0, 1.0);
   }
 
   void offsetPerspective(float znear, float zfar)
@@ -89,11 +88,6 @@ class DomeDistort
   void setColorDistScale(float distscale)
   {
     distort_shader.set("c_distscale", distscale);
-  }
-  
-  void setColorScale(float rs, float gs, float bs)
-  {
-    distort_shader.set("c_scale", rs, gs, bs);
   }
   
   void setColorTransform(PMatrix3D mat)
@@ -126,6 +120,25 @@ class DomeDistort
     c.scale(1.0, sat_scale, sat_scale);
     c.scale(val_scale);
     c.apply(rgb_from_yiq);
+    setColorTransform(c);
+  }
+  
+  void setColorTransformHSVShiftInvert(float hue_shift_deg, float sat_scale, float val_scale, float invert)
+  {
+    PMatrix3D c = new PMatrix3D();
+    
+    // Hue shift matrix = 
+    // RGB_from_YIQ * rotateX(hue) * saturation_scale * value_scale * YIQ_from_RGB
+    c = yiq_from_rgb.get();  
+    c.rotateX(radians(hue_shift_deg));
+    c.scale(1.0, sat_scale, sat_scale);
+    c.scale(val_scale);
+    c.apply(rgb_from_yiq);
+    c.apply(new PMatrix3D(
+      1-2*invert, 0, 0, 0,
+      0, 1-2*invert, 0, 0,
+      0, 0, 1-2*invert, 0,
+      invert, invert, invert, 1 ));
     setColorTransform(c);
   }
 

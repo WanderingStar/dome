@@ -4,6 +4,48 @@ import themidibus.*;
 import gifAnimation.*;
 import java.io.File;
 
+// nanoKontrol 1
+final int DIAL1 = 14;
+final int DIAL2 = 15;
+final int DIAL3 = 16;
+final int DIAL4 = 17;
+final int DIAL5 = 18;
+final int DIAL6 = 19;
+final int DIAL7 = 20;
+final int DIAL8 = 21;
+final int SLIDER1 = 2;
+final int SLIDER2 = 3;
+final int SLIDER3 = 4;
+final int SLIDER4 = 5;
+final int SLIDER5 = 6;
+final int SLIDER6 = 8;
+final int SLIDER7 = 9;
+final int SLIDER8 = 12;
+final int REWIND = 47;
+final int FASTFORWARD = 48;
+final int RESET = 49;
+
+// nanoKontrol 2
+/*final int DIAL1 = 16;
+final int DIAL2 = 17;
+final int DIAL3 = 18;
+final int DIAL4 = 19;
+final int DIAL5 = 20;
+final int DIAL6 = 21;
+final int DIAL7 = 22;
+final int DIAL8 = 23;
+final int SLIDER1 = 0;
+final int SLIDER2 = 1;
+final int SLIDER3 = 2;
+final int SLIDER4 = 3;
+final int SLIDER5 = 4;
+final int SLIDER6 = 5;
+final int SLIDER7 = 6;
+final int SLIDER8 = 7;
+final int REWIND = 43;
+final int FASTFORWARD = 44;
+final int RESET = 46;*/
+
 // dome distortion
 PGraphics src, targ;
 DomeDistort dome;
@@ -20,13 +62,13 @@ float cur_framerate = 30.0; // can be fractional or negative
 MidiBus kontrol;
 
 // mode flags
-boolean invert = false; 
 boolean line_mode = false;
 
 // color params
 float hue_shift_deg = 0.0;
 float sat_scale = 1.0;
 float val_scale = 1.0;
+float invert = 0.0;
 
 // dome mapping params
 float dome_rotation = 0.0; // current rotation of dome (radians)
@@ -91,14 +133,17 @@ void keyPressed()
     targ.save("screenshot.png");
     return;
   }
-  if (key == 'i') {
-    invert = !invert;
-    dome.setColorTransformInvert(invert ? 1 : 0);
-    return;
-  }
   if (key == 'l') {
     line_mode = !line_mode;
     return;
+  }
+  if (key == 'r') {
+    cur_framerate = 30.0;
+    dome_angvel = 0.0;
+    hue_shift_deg = 0.0;
+    sat_scale = 1.0;
+    val_scale = 1.0;
+    dome_coverage = 0.9;
   }
   if (key == CODED && keyCode == LEFT) {
     nextAnim(-1);
@@ -121,40 +166,57 @@ void controllerChange(int channel, int number, int value) {
   
   // all number are in scene 1
   switch (number) {
-    case 14: // dial 1
+    case DIAL1:
       cur_framerate = lerp(-60.0, 60.0, fval);
       println("Framerate: "+cur_framerate+" fps");
       break;
-    case 15: // dial 2
-      if (value >= 63 && value <= 65)
+    case DIAL2:
+      if (value >= 61 && value <= 67)
         dome_angvel = 0.0;
       else
-        dome_angvel = lerp(-1.0, 1.0, fval);
+        dome_angvel = lerp(-0.2, 0.2, fval);
+        
       println("Dome rotation: "+degrees(dome_angvel)+" deg/s");
       break;
-    case 16: // dial 3
+    case DIAL3:
       hue_shift_deg = lerp(0.0, 360.0, fval);
       println("Hue shift: "+hue_shift_deg+" deg");
       break;
-    case 17: // dial 4
+    case DIAL4:
       sat_scale = 2.0*fval;
       println("Saturation scale: "+sat_scale);
       break;
-    case 18: // dial 5
+    case DIAL5:
       val_scale = 2.0*fval;
       println("Value scale: "+val_scale);
       break;
-    case 19: // dial 6
+    case DIAL6:
+      invert = fval;
+      println("Invert: "+invert);
+      break;
+    case DIAL7:
       dome_coverage = lerp(0.01, 1.0, fval);
       println("Radial dome coverage: "+dome_coverage);
       break;
-    case 47: // rewind
+    case REWIND:
       if (value > 0)
         nextAnim(-1);
       break;
-    case 48: // fast forward
+    case FASTFORWARD:
       if (value > 0)
         nextAnim(1);
+      break;
+    case RESET:
+      if (value > 0)
+      {
+        cur_framerate = 30.0;
+        dome_angvel = 0.0;
+        hue_shift_deg = 0.0;
+        sat_scale = 1.0;
+        val_scale = 1.0;
+        invert = 0.0;
+        dome_coverage = 0.9;
+      }
       break;
     default:
       break;
@@ -196,7 +258,7 @@ void draw()
   cur_frame = (int)cur_floatframe;
   
   // update color transform
-  dome.setColorTransformHSVShift(hue_shift_deg, sat_scale, val_scale);
+  dome.setColorTransformHSVShiftInvert(hue_shift_deg, sat_scale, val_scale, invert);
   
   // update texture params
   dome_rotation += dome_angvel / 60.0;
