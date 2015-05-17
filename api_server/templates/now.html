@@ -1,0 +1,12 @@
+<!doctype html>
+<title>Hello from Flask</title>
+<h1>Now Playing</h1>
+<h2>{{ history[0].post.blog_name }}</h2>
+{{ history[0].post.caption | striptags }}
+
+<h1>Recent</h1>
+{% for item in history[1:] %}
+<h2>{{ item.post.blog_name }}</h2>
+{{ item.post.caption | striptags }}
+{% endfor %}
+
