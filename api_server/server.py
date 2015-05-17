@@ -92,12 +92,14 @@ def history():
     limit = arg(request, 'limit', 10)
     if request.method == 'POST':
         if request.json:
-            db.history.insert(request.json)
+            hist = request.json
         elif 'json' in request.form:
-            db.history.insert(json.loads(request.form['json']))
+            hist = json.loads(request.form['json'])
+        #app.logger.info("history: {}".format(hist))
+        db.history.replace_one({'id': hist['id'], 'start': hist['start']}, hist, upsert=True)
     history = []
     for played in db.history.find({}, {'_id':0}) \
-                        .sort('end', pymongo.DESCENDING) \
+                        .sort('start', pymongo.DESCENDING) \
                         .skip(offset).limit(limit):
         played['post'] = db.post.find_one({'id': int(played['id'])}, {'_id':0})
         history.append(played)

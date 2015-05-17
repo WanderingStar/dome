@@ -75,6 +75,7 @@ void loadAnimation()
   cur_floatframe = 0.0;
   reps = 0;
   started = System.currentTimeMillis() / 1000;
+  client.addToHistory(started, 0, 0);
 }
 
 void nextAnim(int num)
@@ -82,9 +83,7 @@ void nextAnim(int num)
   long stopped = System.currentTimeMillis() / 1000;
   println(started);
   println(stopped);
-  if (reps > 2) {
-    client.addToHistory(started, stopped, reps);
-  }
+  client.addToHistory(started, stopped, reps);
   if (num < 0) {
     client.prev();
   } else {
