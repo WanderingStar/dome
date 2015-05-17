@@ -62,7 +62,8 @@ float cur_framerate = 30.0; // can be fractional or negative
 MidiBus kontrol;
 
 // mode flags
-boolean line_mode = false;
+boolean line_mode = false; // just draws a vertical line, for setup
+boolean img_mode  = false; // dump raw image to screen, no distortion
 
 // color params
 float hue_shift_deg = 0.0;
@@ -83,7 +84,10 @@ void setup()
   //size(854, 480, P3D);
   //size(960, 540, P3D);
   
-  frameRate(60); // framerate at 60 by default, we advance frames at a different rate
+  // Framerate set to 61, since apparently Processing's timing is sometimes
+  // off and we get judder when set to 60.
+  // Animation playback speed is controlled by cur_framerate.
+  frameRate(61);
   
   // set up source buffer for the actual frame data
   src = createGraphics(1024, 1024, P3D);
@@ -135,6 +139,10 @@ void keyPressed()
   }
   if (key == 'l') {
     line_mode = !line_mode;
+    return;
+  }
+  if (key == 'i') {
+    img_mode = !img_mode;
     return;
   }
   if (key == 'r') {
@@ -226,13 +234,9 @@ void controllerChange(int channel, int number, int value) {
 // stretches an image over the entire target canvas
 void drawFullscreenQuad(PGraphics t, PImage i)
 {
-  t.beginShape();
-  t.texture(i);
-  t.vertex(0, 0, 0, 0);
-  t.vertex(t.width, 0, i.width, 0);
-  t.vertex(t.width, t.height, i.width, i.height);
-  t.vertex(0, t.height, 0, i.height);
-  t.endShape();
+  float img_scale = max((float)t.width / (float)i.width, (float)t.height / (float)i.height);
+  t.imageMode(CENTER);
+  t.image(i, t.width/2, t.height/2, i.width * img_scale, i.height * img_scale);
 }
 
 void draw()
@@ -257,28 +261,43 @@ void draw()
     cur_floatframe += (float)anim_frames.length;
   cur_frame = (int)cur_floatframe;
   
-  // update color transform
-  dome.setColorTransformHSVShiftInvert(hue_shift_deg, sat_scale, val_scale, invert);
-  
   // update texture params
   dome_rotation += dome_angvel / 60.0;
   dome.setTexRotation(dome_rotation);
   dome.setTexExtent(dome_coverage);
   
-  // distort into target image
-  dome.update();
+  // update color transform
+  dome.setColorTransformHSVShiftInvert(hue_shift_deg, sat_scale, val_scale, invert);
   
-  // draw distorted image to screen
+  // ready to draw
   background(0);
   
-  // override image if we're in line mode
   if (line_mode)
   {
+    // override image if we're in line mode, just draw a line
     stroke(255);
     line(width/2, 0, width/2, height);
   }
+  else if (img_mode)
+  {
+    // just blit source to target in image mode
+    imageMode(CENTER);
+    image(src, width/2, height/2, height, height);
+  }
   else
+  {
+    // do actual distortion in regular mode
+    
+    // distort into target image
+    dome.update();
+    
+    // draw distorted image to screen
+    imageMode(CORNER);
     image(targ, 0, 0);
+  }
+  
+  
+  
 }
 
 
