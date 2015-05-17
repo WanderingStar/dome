@@ -93,6 +93,8 @@ def history():
     if request.method == 'POST':
         if request.json:
             db.history.insert(request.json)
+        elif 'json' in request.form:
+            db.history.insert(json.loads(request.form['json']))
     history = []
     for played in db.history.find({}, {'_id':0}) \
                         .sort('end', pymongo.DESCENDING) \

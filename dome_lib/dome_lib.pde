@@ -1,5 +1,3 @@
-/* dome_lib code by Christian Miller */
-
 import themidibus.*;
 import gifAnimation.*;
 import java.io.File;
@@ -9,12 +7,15 @@ PGraphics src, targ;
 DomeDistort dome;
 
 // animation & playback
-ArrayList<String> anims = new ArrayList<String>();
+//ArrayList<String> anims = new ArrayList<String>();
+ProjectApiClient client = new ProjectApiClient("http://localhost:5000");
 PImage[] anim_frames;
-int cur_anim = -1;
+int cur_anim = 0;
 int cur_frame = 0;
 float cur_floatframe = 0.0; // higher-resolution frame number, truncated to get cur_frame
 float cur_framerate = 30.0; // can be fractional or negative
+int reps = 0;
+long started;
 
 // MIDI control
 MidiBus kontrol;
@@ -40,48 +41,56 @@ void setup()
   size(1280, 720, P3D);
   //size(854, 480, P3D);
   //size(960, 540, P3D);
-  
+
   frameRate(60); // framerate at 60 by default, we advance frames at a different rate
-  
+
   // set up source buffer for the actual frame data
   src = createGraphics(1024, 1024, P3D);
-  
+
   // set up target buffer to render into
   targ = createGraphics(width, height, P3D);
-  
+
   // create and configure the distortion object
   dome = new DomeDistort(targ, src);
   dome.setTexExtent(0.9); // set to < 1.0 to shrink towards center of dome
   dome.setTexRotation(0); // set to desired rotation angle in radians
-  
+
   println(dataPath(""));
-  
+
   // make list of animations
-  File dir = new File(dataPath(""));
-  for (String filename : dir.list()) {
-    if (filename.endsWith(".gif")) {
-      anims.add(filename);
-    }
-  }
-  nextAnim(1);
-  
+  client.addDirectory(dataPath("content"));
+  loadAnimation();
+
   // configure nanokontrol, if it exists
   MidiBus.list();
   kontrol = new MidiBus(this, "SLIDER/KNOB", "CTRL");
 }
 
-void nextAnim(int num)
+void loadAnimation()
 {
-  cur_anim += num;
-  if (cur_anim < 0)
-    cur_anim += anims.size();
-  else if (cur_anim >= anims.size())
-    cur_anim -= anims.size();
-    
-  println("Loaded animation: " + anims.get(cur_anim));
-  anim_frames = Gif.getPImages(this, anims.get(cur_anim));
+  String filename = client.getCurrentFilename();
+  println("Loading animation: " + filename);
+  anim_frames = Gif.getPImages(this, filename);
   cur_frame = 0;
   cur_floatframe = 0.0;
+  reps = 0;
+  started = System.currentTimeMillis() / 1000;
+}
+
+void nextAnim(int num)
+{
+  long stopped = System.currentTimeMillis() / 1000;
+  println(started);
+  println(stopped);
+  if (reps > 2) {
+    client.addToHistory(started, stopped, reps);
+  }
+  if (num < 0) {
+    client.prev();
+  } else {
+    client.next();
+  }
+  loadAnimation();
 }
 
 void keyPressed()
@@ -108,7 +117,7 @@ void keyPressed()
     nextAnim(1);
     return;
   }
-  
+
   // fall through to move to the next animation
   nextAnim(1);
 }
@@ -116,48 +125,48 @@ void keyPressed()
 // midi input callback
 void controllerChange(int channel, int number, int value) {
   println("Controller Change: "+channel+", "+number+": "+value );
-  
+
   float fval = (float)value/127.0;
-  
+
   // all number are in scene 1
   switch (number) {
-    case 14: // dial 1
-      cur_framerate = lerp(-60.0, 60.0, fval);
-      println("Framerate: "+cur_framerate+" fps");
-      break;
-    case 15: // dial 2
-      if (value >= 63 && value <= 65)
-        dome_angvel = 0.0;
-      else
-        dome_angvel = lerp(-1.0, 1.0, fval);
-      println("Dome rotation: "+degrees(dome_angvel)+" deg/s");
-      break;
-    case 16: // dial 3
-      hue_shift_deg = lerp(0.0, 360.0, fval);
-      println("Hue shift: "+hue_shift_deg+" deg");
-      break;
-    case 17: // dial 4
-      sat_scale = 2.0*fval;
-      println("Saturation scale: "+sat_scale);
-      break;
-    case 18: // dial 5
-      val_scale = 2.0*fval;
-      println("Value scale: "+val_scale);
-      break;
-    case 19: // dial 6
-      dome_coverage = lerp(0.01, 1.0, fval);
-      println("Radial dome coverage: "+dome_coverage);
-      break;
-    case 47: // rewind
-      if (value > 0)
-        nextAnim(-1);
-      break;
-    case 48: // fast forward
-      if (value > 0)
-        nextAnim(1);
-      break;
-    default:
-      break;
+  case 14: // dial 1
+    cur_framerate = lerp(-60.0, 60.0, fval);
+    println("Framerate: "+cur_framerate+" fps");
+    break;
+  case 15: // dial 2
+    if (value >= 63 && value <= 65)
+      dome_angvel = 0.0;
+    else
+      dome_angvel = lerp(-1.0, 1.0, fval);
+    println("Dome rotation: "+degrees(dome_angvel)+" deg/s");
+    break;
+  case 16: // dial 3
+    hue_shift_deg = lerp(0.0, 360.0, fval);
+    println("Hue shift: "+hue_shift_deg+" deg");
+    break;
+  case 17: // dial 4
+    sat_scale = 2.0*fval;
+    println("Saturation scale: "+sat_scale);
+    break;
+  case 18: // dial 5
+    val_scale = 2.0*fval;
+    println("Value scale: "+val_scale);
+    break;
+  case 19: // dial 6
+    dome_coverage = lerp(0.01, 1.0, fval);
+    println("Radial dome coverage: "+dome_coverage);
+    break;
+  case 47: // rewind
+    if (value > 0)
+      nextAnim(-1);
+    break;
+  case 48: // fast forward
+    if (value > 0)
+      nextAnim(1);
+    break;
+  default:
+    break;
   }
 }
 
@@ -186,37 +195,38 @@ void draw()
   src.tint(255, 255 * partial);
   drawFullscreenQuad(src, anim_frames[next_frame]);
   src.endDraw();
-  
+
   // update animation
   cur_floatframe += cur_framerate / 60.0;
-  if (cur_floatframe >= (float)anim_frames.length)
+  if (cur_floatframe >= (float)anim_frames.length) {
     cur_floatframe -= (float)anim_frames.length;
-  else if (cur_floatframe < 0.0)
+    reps++;
+  } else if (cur_floatframe < 0.0) {
     cur_floatframe += (float)anim_frames.length;
+    reps++;
+  }
   cur_frame = (int)cur_floatframe;
-  
+
   // update color transform
   dome.setColorTransformHSVShift(hue_shift_deg, sat_scale, val_scale);
-  
+
   // update texture params
   dome_rotation += dome_angvel / 60.0;
   dome.setTexRotation(dome_rotation);
   dome.setTexExtent(dome_coverage);
-  
+
   // distort into target image
   dome.update();
-  
+
   // draw distorted image to screen
   background(0);
-  
+
   // override image if we're in line mode
   if (line_mode)
   {
     stroke(255);
     line(width/2, 0, width/2, height);
-  }
-  else
+  } else
     image(targ, 0, 0);
 }
-
 
