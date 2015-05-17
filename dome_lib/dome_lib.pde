@@ -2,6 +2,48 @@ import themidibus.*;
 import gifAnimation.*;
 import java.io.File;
 
+// nanoKontrol 1
+final int DIAL1 = 14;
+final int DIAL2 = 15;
+final int DIAL3 = 16;
+final int DIAL4 = 17;
+final int DIAL5 = 18;
+final int DIAL6 = 19;
+final int DIAL7 = 20;
+final int DIAL8 = 21;
+final int SLIDER1 = 2;
+final int SLIDER2 = 3;
+final int SLIDER3 = 4;
+final int SLIDER4 = 5;
+final int SLIDER5 = 6;
+final int SLIDER6 = 8;
+final int SLIDER7 = 9;
+final int SLIDER8 = 12;
+final int REWIND = 47;
+final int FASTFORWARD = 48;
+final int RESET = 49;
+
+// nanoKontrol 2
+/*final int DIAL1 = 16;
+final int DIAL2 = 17;
+final int DIAL3 = 18;
+final int DIAL4 = 19;
+final int DIAL5 = 20;
+final int DIAL6 = 21;
+final int DIAL7 = 22;
+final int DIAL8 = 23;
+final int SLIDER1 = 0;
+final int SLIDER2 = 1;
+final int SLIDER3 = 2;
+final int SLIDER4 = 3;
+final int SLIDER5 = 4;
+final int SLIDER6 = 5;
+final int SLIDER7 = 6;
+final int SLIDER8 = 7;
+final int REWIND = 43;
+final int FASTFORWARD = 44;
+final int RESET = 46;*/
+
 // dome distortion
 PGraphics src, targ;
 DomeDistort dome;
@@ -21,13 +63,14 @@ long started;
 MidiBus kontrol;
 
 // mode flags
-boolean invert = false; 
-boolean line_mode = false;
+boolean line_mode = false; // just draws a vertical line, for setup
+boolean img_mode  = false; // dump raw image to screen, no distortion
 
 // color params
 float hue_shift_deg = 0.0;
 float sat_scale = 1.0;
 float val_scale = 1.0;
+float invert = 0.0;
 
 // dome mapping params
 float dome_rotation = 0.0; // current rotation of dome (radians)
@@ -41,9 +84,12 @@ void setup()
   size(1280, 720, P3D);
   //size(854, 480, P3D);
   //size(960, 540, P3D);
-
-  frameRate(60); // framerate at 60 by default, we advance frames at a different rate
-
+  
+  // Framerate set to 61, since apparently Processing's timing is sometimes
+  // off and we get judder when set to 60.
+  // Animation playback speed is controlled by cur_framerate.
+  frameRate(61);
+  
   // set up source buffer for the actual frame data
   src = createGraphics(1024, 1024, P3D);
 
@@ -99,14 +145,21 @@ void keyPressed()
     targ.save("screenshot.png");
     return;
   }
-  if (key == 'i') {
-    invert = !invert;
-    dome.setColorTransformInvert(invert ? 1 : 0);
-    return;
-  }
   if (key == 'l') {
     line_mode = !line_mode;
     return;
+  }
+  if (key == 'i') {
+    img_mode = !img_mode;
+    return;
+  }
+  if (key == 'r') {
+    cur_framerate = 30.0;
+    dome_angvel = 0.0;
+    hue_shift_deg = 0.0;
+    sat_scale = 1.0;
+    val_scale = 1.0;
+    dome_coverage = 0.9;
   }
   if (key == CODED && keyCode == LEFT) {
     nextAnim(-1);
@@ -129,56 +182,69 @@ void controllerChange(int channel, int number, int value) {
 
   // all number are in scene 1
   switch (number) {
-  case 14: // dial 1
-    cur_framerate = lerp(-60.0, 60.0, fval);
-    println("Framerate: "+cur_framerate+" fps");
-    break;
-  case 15: // dial 2
-    if (value >= 63 && value <= 65)
-      dome_angvel = 0.0;
-    else
-      dome_angvel = lerp(-1.0, 1.0, fval);
-    println("Dome rotation: "+degrees(dome_angvel)+" deg/s");
-    break;
-  case 16: // dial 3
-    hue_shift_deg = lerp(0.0, 360.0, fval);
-    println("Hue shift: "+hue_shift_deg+" deg");
-    break;
-  case 17: // dial 4
-    sat_scale = 2.0*fval;
-    println("Saturation scale: "+sat_scale);
-    break;
-  case 18: // dial 5
-    val_scale = 2.0*fval;
-    println("Value scale: "+val_scale);
-    break;
-  case 19: // dial 6
-    dome_coverage = lerp(0.01, 1.0, fval);
-    println("Radial dome coverage: "+dome_coverage);
-    break;
-  case 47: // rewind
-    if (value > 0)
-      nextAnim(-1);
-    break;
-  case 48: // fast forward
-    if (value > 0)
-      nextAnim(1);
-    break;
-  default:
-    break;
+    case DIAL1:
+      cur_framerate = lerp(-60.0, 60.0, fval);
+      println("Framerate: "+cur_framerate+" fps");
+      break;
+    case DIAL2:
+      if (value >= 61 && value <= 67)
+        dome_angvel = 0.0;
+      else
+        dome_angvel = lerp(-0.2, 0.2, fval);
+        
+      println("Dome rotation: "+degrees(dome_angvel)+" deg/s");
+      break;
+    case DIAL3:
+      hue_shift_deg = lerp(0.0, 360.0, fval);
+      println("Hue shift: "+hue_shift_deg+" deg");
+      break;
+    case DIAL4:
+      sat_scale = 2.0*fval;
+      println("Saturation scale: "+sat_scale);
+      break;
+    case DIAL5:
+      val_scale = 2.0*fval;
+      println("Value scale: "+val_scale);
+      break;
+    case DIAL6:
+      invert = fval;
+      println("Invert: "+invert);
+      break;
+    case DIAL7:
+      dome_coverage = lerp(0.01, 1.0, fval);
+      println("Radial dome coverage: "+dome_coverage);
+      break;
+    case REWIND:
+      if (value > 0)
+        nextAnim(-1);
+      break;
+    case FASTFORWARD:
+      if (value > 0)
+        nextAnim(1);
+      break;
+    case RESET:
+      if (value > 0)
+      {
+        cur_framerate = 30.0;
+        dome_angvel = 0.0;
+        hue_shift_deg = 0.0;
+        sat_scale = 1.0;
+        val_scale = 1.0;
+        invert = 0.0;
+        dome_coverage = 0.9;
+      }
+      break;
+    default:
+      break;
   }
 }
 
 // stretches an image over the entire target canvas
 void drawFullscreenQuad(PGraphics t, PImage i)
 {
-  t.beginShape();
-  t.texture(i);
-  t.vertex(0, 0, 0, 0);
-  t.vertex(t.width, 0, i.width, 0);
-  t.vertex(t.width, t.height, i.width, i.height);
-  t.vertex(0, t.height, 0, i.height);
-  t.endShape();
+  float img_scale = max((float)t.width / (float)i.width, (float)t.height / (float)i.height);
+  t.imageMode(CENTER);
+  t.image(i, t.width/2, t.height/2, i.width * img_scale, i.height * img_scale);
 }
 
 void draw()
@@ -206,26 +272,42 @@ void draw()
   }
   cur_frame = (int)cur_floatframe;
 
-  // update color transform
-  dome.setColorTransformHSVShift(hue_shift_deg, sat_scale, val_scale);
-
   // update texture params
   dome_rotation += dome_angvel / 60.0;
   dome.setTexRotation(dome_rotation);
   dome.setTexExtent(dome_coverage);
-
-  // distort into target image
-  dome.update();
-
-  // draw distorted image to screen
+  
+  // update color transform
+  dome.setColorTransformHSVShiftInvert(hue_shift_deg, sat_scale, val_scale, invert);
+  
+  // ready to draw
   background(0);
-
-  // override image if we're in line mode
+  
   if (line_mode)
   {
+    // override image if we're in line mode, just draw a line
     stroke(255);
     line(width/2, 0, width/2, height);
-  } else
+  }
+  else if (img_mode)
+  {
+    // just blit source to target in image mode
+    imageMode(CENTER);
+    image(src, width/2, height/2, height, height);
+  }
+  else
+  {
+    // do actual distortion in regular mode
+    
+    // distort into target image
+    dome.update();
+    
+    // draw distorted image to screen
+    imageMode(CORNER);
     image(targ, 0, 0);
+  }
+  
+  
+  
 }
 

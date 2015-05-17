@@ -1,5 +1,5 @@
 import flask
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 import pymongo
 from pymongo import MongoClient
 import json
@@ -84,6 +84,15 @@ def keyword_counts(keywords=None):
 def keywords():
     return jsonify(keyword_counts(request.json and arg(request, 'keywords')))
 
+def fetch_history(offset=0, limit=10):
+    history = []
+    for played in db.history.find({}, {'_id':0}) \
+                        .sort('start', pymongo.DESCENDING) \
+                        .skip(offset).limit(limit):
+        played['post'] = db.post.find_one({'id': int(played['id'])}, {'_id':0})
+        history.append(played)
+    return history
+
 @app.route("/history", methods=['POST', 'GET'])
 def history():
     # return the list of images that have been shown, and for how long
@@ -97,13 +106,15 @@ def history():
             hist = json.loads(request.form['json'])
         #app.logger.info("history: {}".format(hist))
         db.history.replace_one({'id': hist['id'], 'start': hist['start']}, hist, upsert=True)
-    history = []
-    for played in db.history.find({}, {'_id':0}) \
-                        .sort('start', pymongo.DESCENDING) \
-                        .skip(offset).limit(limit):
-        played['post'] = db.post.find_one({'id': int(played['id'])}, {'_id':0})
-        history.append(played)
+    history = fetch_history(offset, limit)
     return jsonify({'history': history})
+
+@app.route("/now.html", methods=['GET'])
+def now():
+    offset = arg(request, 'offset', 0)
+    limit = arg(request, 'limit', 10)
+    history = fetch_history(offset, limit)    
+    return render_template('now.html', history=history)
 
 @app.route("/play", methods=['POST', 'GET'])
 def play():
