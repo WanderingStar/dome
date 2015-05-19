@@ -81,9 +81,9 @@ void setup()
 {
   //size(1024, 1024, P3D);
   //size(1920, 1080, P3D);
-  size(1280, 720, P3D);
+  //size(1280, 720, P3D);
   //size(854, 480, P3D);
-  //size(960, 540, P3D);
+  size(960, 540, P3D);
   
   // Framerate set to 61, since apparently Processing's timing is sometimes
   // off and we get judder when set to 60.
@@ -122,13 +122,12 @@ void loadAnimation()
   reps = 0;
   started = System.currentTimeMillis() / 1000;
   client.addToHistory(started, 0, 0);
+  println("keywords: " + client.getKeywords());
 }
 
 void nextAnim(int num)
 {
   long stopped = System.currentTimeMillis() / 1000;
-  println(started);
-  println(stopped);
   client.addToHistory(started, stopped, reps);
   if (num < 0) {
     client.prev();
@@ -167,6 +166,22 @@ void keyPressed()
   }
   if (key == CODED && keyCode == RIGHT) {
     nextAnim(1);
+    return;
+  }
+  if (key == '1') {
+    client.toggleKeyword("chill");
+    return;
+  }
+  if (key == '2') {
+    client.toggleKeyword("energetic");
+    return;
+  }
+  if (key == '3') {
+    client.toggleKeyword("monochrome");
+    return;
+  }
+  if (key == '4') {
+    client.toggleKeyword("colorful");
     return;
   }
 

@@ -104,15 +104,18 @@ class ProjectApiClient {
     post.send();
   }
 
-  public Set<String> getKeywords() {
+  public HashSet<String> getKeywords() {
     String url = String.format("%s/%d/keywords", baseUrl, getGifId());
-    println(url);
     GetRequest get = new GetRequest(url);
-    if (get.getContent() == null)
+    get.send();
+    try {
+      JSONObject response = JSONObject.parse(get.getContent());
+      String[] keywords = response.getJSONArray("keywords").getStringArray();
+      return new HashSet<String>(Arrays.asList(keywords));
+    } 
+    catch (Exception e) {
       return new HashSet<String>();
-    JSONObject response = JSONObject.parse(get.getContent());
-    String[] keywords = response.getJSONArray("keywords").getStringArray();
-    return new HashSet<String>(Arrays.asList(keywords));
+    }
   }
 
   public void setKeywords(Set<String> keywords) {
@@ -122,9 +125,19 @@ class ProjectApiClient {
       joined.append(",");
     }
     String url = String.format("%s/%d/keywords?keywords=%s", baseUrl, getGifId(), joined);
-    println(url);
     GetRequest get = new GetRequest(url);
+    get.send();
   }
-  
+
+  public void toggleKeyword(String keyword) {
+    HashSet<String> keywords = getKeywords();
+    if (keywords.contains(keyword)) {
+      keywords.remove(keyword);
+    } else {
+      keywords.add(keyword);
+    }
+    setKeywords(keywords);
+    println("keywords: " + keywords);
+  }
 }
 
