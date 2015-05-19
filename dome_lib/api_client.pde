@@ -20,13 +20,16 @@ class ProjectApiClient {
   }
 
   public void addDirectory(String path) {
-    println(path);
+    println("adding content from " + path);
     File dir = new File(path);
     for (String filename : dir.list ()) {
+      String filepath = path + "/" + filename;
       Matcher m = idGifPattern.matcher(filename);
       if (m.find()) {
-        idFilename.put(new Long(m.group(1)), path + "/" + filename);
-        playlist.add(path + "/" + filename);
+        idFilename.put(new Long(m.group(1)), filepath);
+        playlist.add(filepath);
+      } else if (new File(filepath).isDirectory()) {
+        addDirectory(filepath);
       }
     }
   }
