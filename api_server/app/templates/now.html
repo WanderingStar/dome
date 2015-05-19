@@ -1,5 +1,10 @@
 <!doctype html>
-<title>Hello from Flask</title>
+<html>
+  <head>
+    <title>Project Dome Now Playing</title>
+    <link rel="stylesheet" type="text/css" href="site.css">
+  </head>
+<body>
 <h1>Now Playing</h1>
 <h2>{{ history[0].post.blog_name }}</h2>
 {{ history[0].post.caption | striptags }}
@@ -10,3 +15,5 @@
 {{ item.post.caption | striptags }}
 {% endfor %}
 
+</body>
+</html>
