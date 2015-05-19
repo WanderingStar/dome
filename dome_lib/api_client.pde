@@ -7,7 +7,7 @@ import java.util.*;
 class ProjectApiClient {
   public final Pattern idGifPattern = Pattern.compile("(\\d{3,}).*\\.gif$");
 
-  private String baseUrl = "http://localhost:5000";
+  private String baseUrl = "http://localhost:8000";
   private HashMap<Long, String> idFilename = new HashMap<Long, String>();
   private List<String> playlist = new ArrayList<String>();
   private Set<String> keywords = new HashSet<String>();

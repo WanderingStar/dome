@@ -148,6 +148,9 @@ def add_cors(resp):
         resp.headers['Access-Control-Max-Age'] = '1'
     return resp
 
+app.debug = True
+
+
 if __name__ == "__main__":
     app.debug = True
     app.run(host='0.0.0.0')

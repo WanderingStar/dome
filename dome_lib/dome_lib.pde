@@ -50,7 +50,7 @@ DomeDistort dome;
 
 // animation & playback
 //ArrayList<String> anims = new ArrayList<String>();
-ProjectApiClient client = new ProjectApiClient("http://localhost:5000");
+ProjectApiClient client = new ProjectApiClient("http://localhost:8000");
 PImage[] anim_frames;
 int cur_anim = 0;
 int cur_frame = 0;
@@ -306,8 +306,6 @@ void draw()
     imageMode(CORNER);
     image(targ, 0, 0);
   }
-  
-  
   
 }
 
