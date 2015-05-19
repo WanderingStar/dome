@@ -9,6 +9,11 @@ app = Flask(__name__)
 db = MongoClient().project
 
 def arg(request, name, default=None):
+    if request.method == 'POST':
+        if request.json:
+            return request.json.get(name, default)
+        elif 'json' in request.form:
+            return json.loads(request.form['json']).get(name, default)
     if request.json:
         return request.json.get(name, default)
     query_param = request.args.get(name)
@@ -18,7 +23,7 @@ def arg(request, name, default=None):
         return int(query_param)
     except ValueError:
         if query_param.find(","):
-            return query_param.split(",")
+            return [k for k in query_param.split(",") if k and k != ""]
         return query_param
 
 @app.route("/")

@@ -45,19 +45,18 @@ class ProjectApiClient {
       GetRequest get = new GetRequest(baseUrl + "/play");
       get.send();
       JSONObject response = JSONObject.parse(get.getContent());
-      
+
       double updated = response.getDouble("updated");
       if (updated <= lastUpdated)
         return;
       lastUpdated = updated;
 
       String[] keywordArray = response.getJSONArray("keywords").getStringArray();
-      keywords = new HashSet<String>();
-      keywords.addAll(Arrays.asList(keywordArray));
+      keywords = new HashSet<String>(Arrays.asList(keywordArray));
 
       // ignore any items in the playlist that we don't have files for
       playlist = new ArrayList<String>();
-      for (long id : response.getJSONArray("ids").getLongArray()) {
+      for (long id : response.getJSONArray ("ids").getLongArray()) {
         if (idFilename.get(id) != null) {
           playlist.add(idFilename.get(id));
         }
@@ -68,35 +67,64 @@ class ProjectApiClient {
       //print("Couldn't update playlist: " + e);
     }
   }
- 
-   public String getCurrentFilename() {
-     return playlist.get(current);
-   }
-   
-   public String next() {
-     current = (current + 1) % playlist.size();
-     return getCurrentFilename();
-   }
-   
-   public String prev() {
-     current = (current - 1) % playlist.size();
-     return getCurrentFilename();
-   }
-   
-   public void addToHistory(long startedAt, long stoppedAt, int repetitions) {
-      Matcher m = idGifPattern.matcher(getCurrentFilename());
-      m.find();
-      Long id = new Long(m.group(1));
-      PostRequest post = new PostRequest(baseUrl + "/history");
-      JSONObject history = new JSONObject();
-      history.setLong("id", id);
-      history.setLong("start", startedAt);
-      history.setLong("end", stoppedAt);
-      history.setInt("reps", repetitions);
-      post.addData("json", history.toString());
-      post.send();
-   }
-   
-}  
-     
+
+  public String getCurrentFilename() {
+    return playlist.get(current);
+  }
+
+  public String next() {
+    current = (current + 1) % playlist.size();
+    return getCurrentFilename();
+  }
+
+  public String prev() {
+    current = (current - 1) % playlist.size();
+    return getCurrentFilename();
+  }
+
+  public long getGifId(String filename) {
+    Matcher m = idGifPattern.matcher(filename);
+    m.find();
+    return new Long(m.group(1));
+  }
+
+  public long getGifId() {
+    return getGifId(getCurrentFilename());
+  }
+
+  public void addToHistory(long startedAt, long stoppedAt, int repetitions) {
+    long id = getGifId();
+    PostRequest post = new PostRequest(baseUrl + "/history");
+    JSONObject history = new JSONObject();
+    history.setLong("id", id);
+    history.setLong("start", startedAt);
+    history.setLong("end", stoppedAt);
+    history.setInt("reps", repetitions);
+    post.addData("json", history.toString());
+    post.send();
+  }
+
+  public Set<String> getKeywords() {
+    String url = String.format("%s/%d/keywords", baseUrl, getGifId());
+    println(url);
+    GetRequest get = new GetRequest(url);
+    if (get.getContent() == null)
+      return new HashSet<String>();
+    JSONObject response = JSONObject.parse(get.getContent());
+    String[] keywords = response.getJSONArray("keywords").getStringArray();
+    return new HashSet<String>(Arrays.asList(keywords));
+  }
+
+  public void setKeywords(Set<String> keywords) {
+    StringBuffer joined = new StringBuffer();
+    for (String k : keywords) {
+      joined.append(k);
+      joined.append(",");
+    }
+    String url = String.format("%s/%d/keywords?keywords=%s", baseUrl, getGifId(), joined);
+    println(url);
+    GetRequest get = new GetRequest(url);
+  }
+  
+}
 
