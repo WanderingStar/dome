@@ -4,15 +4,18 @@
     <title>Project Dome Now Playing</title>
     <link rel="stylesheet" type="text/css" href="site.css">
   </head>
+  <meta http-equiv="refresh" content="30">
 <body>
 <h1>Now Playing</h1>
 <h2>{{ history[0].post.blog_name }}</h2>
-{{ history[0].post.caption | striptags }}
+<p>{{ history[0].post.caption | striptags }}</p>
+<img src="/static/content/{{ history[0].image }}">
 
 <h1>Recent</h1>
 {% for item in history[1:] %}
 <h2>{{ item.post.blog_name }}</h2>
-{{ item.post.caption | striptags }}
+<p>{{ item.post.caption | striptags }}</p>
+<img src="/static/content/{{ item.image }}">
 {% endfor %}
 
 </body>

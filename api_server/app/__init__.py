@@ -4,6 +4,7 @@ import pymongo
 from pymongo import MongoClient
 import json
 import time
+import os
 
 app = Flask(__name__)
 db = MongoClient().project
@@ -89,12 +90,24 @@ def keyword_counts(keywords=None):
 def keywords():
     return jsonify(keyword_counts(request.json and arg(request, 'keywords')))
 
+CONTENT_PATH = '/Users/project/dome/api_server/app/static/content'
+
+def filename_from_id(id):
+    match = '_%d_' % id
+    for root, dirs, files in os.walk(CONTENT_PATH):
+        for file in files:
+            if match in file:
+                response = os.path.join(root, file)
+                return response[len(CONTENT_PATH):]
+
 def fetch_history(offset=0, limit=10):
     history = []
     for played in db.history.find({}, {'_id':0}) \
                         .sort('start', pymongo.DESCENDING) \
                         .skip(offset).limit(limit):
-        played['post'] = db.post.find_one({'id': int(played['id'])}, {'_id':0})
+        id = int(played['id'])
+        played['post'] = db.post.find_one({'id': id}, {'_id':0})
+        played['image'] = filename_from_id(id)
         history.append(played)
     return history
 
