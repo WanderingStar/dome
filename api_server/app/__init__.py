@@ -124,13 +124,22 @@ def now():
 @app.route("/play", methods=['POST', 'GET'])
 def play():
     # set/get the keywords which will drive the display, use - to clear the keywords with a get
+    playlist = db.playing.find_one({}, {'_id': 0})
+    updated = False
     keywords = arg(request, 'keywords')
     if keywords:
         if keywords == ['-']:
-            db.playing.replace_one({}, {'keywords': [], 'updated': time.time()}, upsert=True)
+            playlist['keywords'] = []
         else:
-            db.playing.replace_one({}, {'keywords': sorted(list(keywords)), 'updated': time.time()}, upsert=True)
-    playlist = db.playing.find_one({}, {'_id': 0})
+            playlist['keywords'] = keywords
+        updated = True
+    refresh = arg(request, 'refresh')
+    if refresh:
+        playlist['refresh'] = refresh
+        updated = True
+    if updated:
+        playlist['updated'] = time.time()
+        db.playing.replace_one({}, playlist, upsert=True)
     keywords = playlist.get('keywords')
     query = {}
     if keywords:
