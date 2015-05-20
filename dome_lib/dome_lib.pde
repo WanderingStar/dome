@@ -1,6 +1,7 @@
 import themidibus.*;
 import gifAnimation.*;
 import java.io.File;
+import java.util.Vector;
 
 // nanoKontrol 1
 final int DIAL1 = 14;
@@ -11,6 +12,7 @@ final int DIAL5 = 18;
 final int DIAL6 = 19;
 final int DIAL7 = 20;
 final int DIAL8 = 21;
+final int DIAL9 = 22;
 final int SLIDER1 = 2;
 final int SLIDER2 = 3;
 final int SLIDER3 = 4;
@@ -25,24 +27,24 @@ final int RESET = 49;
 
 // nanoKontrol 2
 /*final int DIAL1 = 16;
-final int DIAL2 = 17;
-final int DIAL3 = 18;
-final int DIAL4 = 19;
-final int DIAL5 = 20;
-final int DIAL6 = 21;
-final int DIAL7 = 22;
-final int DIAL8 = 23;
-final int SLIDER1 = 0;
-final int SLIDER2 = 1;
-final int SLIDER3 = 2;
-final int SLIDER4 = 3;
-final int SLIDER5 = 4;
-final int SLIDER6 = 5;
-final int SLIDER7 = 6;
-final int SLIDER8 = 7;
-final int REWIND = 43;
-final int FASTFORWARD = 44;
-final int RESET = 46;*/
+ final int DIAL2 = 17;
+ final int DIAL3 = 18;
+ final int DIAL4 = 19;
+ final int DIAL5 = 20;
+ final int DIAL6 = 21;
+ final int DIAL7 = 22;
+ final int DIAL8 = 23;
+ final int SLIDER1 = 0;
+ final int SLIDER2 = 1;
+ final int SLIDER3 = 2;
+ final int SLIDER4 = 3;
+ final int SLIDER5 = 4;
+ final int SLIDER6 = 5;
+ final int SLIDER7 = 6;
+ final int SLIDER8 = 7;
+ final int REWIND = 43;
+ final int FASTFORWARD = 44;
+ final int RESET = 46;*/
 
 // dome distortion
 PGraphics src, targ;
@@ -51,6 +53,9 @@ DomeDistort dome;
 // animation & playback
 //ArrayList<String> anims = new ArrayList<String>();
 ProjectApiClient client = new ProjectApiClient("http://localhost:8000");
+List<String> playlist = new ArrayList<String>();
+;
+HashMap<String, ArrayList<PImage>> loaded = new HashMap<String, ArrayList<PImage>>();
 PImage[] anim_frames;
 int cur_anim = 0;
 int cur_frame = 0;
@@ -58,6 +63,7 @@ float cur_floatframe = 0.0; // higher-resolution frame number, truncated to get 
 float cur_framerate = 30.0; // can be fractional or negative
 int reps = 0;
 long started;
+int refresh = 60;
 
 // MIDI control
 MidiBus kontrol;
@@ -84,12 +90,12 @@ void setup()
   //size(1280, 720, P3D);
   //size(854, 480, P3D);
   size(960, 540, P3D);
-  
+
   // Framerate set to 61, since apparently Processing's timing is sometimes
   // off and we get judder when set to 60.
   // Animation playback speed is controlled by cur_framerate.
   frameRate(61);
-  
+
   // set up source buffer for the actual frame data
   src = createGraphics(1024, 1024, P3D);
 
@@ -105,36 +111,81 @@ void setup()
 
   // make list of animations
   client.addDirectory(dataPath("content"));
-  loadAnimation();
+  updatePlaylist();
+  selectAnimation(playlist.get(0));
 
   // configure nanokontrol, if it exists
   MidiBus.list();
   kontrol = new MidiBus(this, "SLIDER/KNOB", "CTRL");
 }
 
-void loadAnimation()
-{
-  String filename = client.getCurrentFilename();
-  println("Loading animation: " + filename);
-  anim_frames = Gif.getPImages(this, filename);
+void updatePlaylist() {
+  List<String> nextPlaylist = client.updatePlaylist();
+  if (nextPlaylist != null) {
+    playlist = nextPlaylist;
+    cur_anim = 0;
+  }
+}
+
+void loadAnimations() {
+  // this is called in a background thread to load an unloaded animations
+  for (String filename : loaded.keySet()) {
+    synchronized(loaded) {
+      if (loaded.get(filename) == null) {
+        println("Loading " + filename + "...");
+        PImage[] frames = Gif.getPImages(this, filename);
+        loaded.put(filename, new ArrayList<PImage>(Arrays.asList(frames)));
+        println("Loaded " + filename + ".");
+      }
+    }
+  }
+}
+
+void selectAnimation(String filename) {
+  ArrayList<PImage> frames;
+  synchronized(loaded) {
+    if (!loaded.containsKey(filename)) {
+      loaded.put(filename, null);
+    }
+    if (loaded.get(filename) == null) {
+      loadAnimations();
+    }
+    frames = loaded.get(filename);
+  }
+  anim_frames = frames.toArray(new PImage[1]);
   cur_frame = 0;
   cur_floatframe = 0.0;
   reps = 0;
   started = System.currentTimeMillis() / 1000;
-  client.addToHistory(started, 0, 0);
-  println("keywords: " + client.getKeywords());
+  client.addToHistory(filename, started, 0, 0);
 }
 
-void nextAnim(int num)
-{
-  long stopped = System.currentTimeMillis() / 1000;
-  client.addToHistory(started, stopped, reps);
-  if (num < 0) {
-    client.prev();
+int bound(int n) {
+    return (n < 0 ? playlist.size() : 0) + (n % playlist.size());
+}
+
+void nextAnim(int num) {
+  if (num > 0) {
+    cur_anim = bound(cur_anim + 1);
   } else {
-    client.next();
+    cur_anim = bound(cur_anim - 1);
   }
-  loadAnimation();
+  updatePlaylist();
+  selectAnimation(playlist.get(cur_anim));
+  HashSet<String> adjacent = new HashSet<String>(4);
+  for (int i = cur_anim - 2; i < cur_anim + 3; i++) {
+    adjacent.add(playlist.get(bound(i)));
+  }
+  synchronized(loaded) {
+    loaded.keySet().retainAll(adjacent);
+    for (String filename : adjacent) {
+      if (!loaded.containsKey(filename)) {
+        loaded.put(filename, null);
+      }
+    }
+    println("loaded.size: " + loaded.size());
+  }
+  thread("loadAnimations"); // background
 }
 
 void keyPressed()
@@ -169,19 +220,19 @@ void keyPressed()
     return;
   }
   if (key == '1') {
-    client.toggleKeyword("chill");
+    client.toggleKeyword(playlist.get(cur_anim), "chill");
     return;
   }
   if (key == '2') {
-    client.toggleKeyword("energetic");
+    client.toggleKeyword(playlist.get(cur_anim), "energetic");
     return;
   }
   if (key == '3') {
-    client.toggleKeyword("monochrome");
+    client.toggleKeyword(playlist.get(cur_anim), "monochrome");
     return;
   }
   if (key == '4') {
-    client.toggleKeyword("colorful");
+    client.toggleKeyword(playlist.get(cur_anim), "colorful");
     return;
   }
 
@@ -197,60 +248,65 @@ void controllerChange(int channel, int number, int value) {
 
   // all number are in scene 1
   switch (number) {
-    case DIAL1:
-      cur_framerate = lerp(-60.0, 60.0, fval);
-      println("Framerate: "+cur_framerate+" fps");
-      break;
-    case DIAL2:
-      if (value >= 61 && value <= 67)
-        dome_angvel = 0.0;
-      else
-        dome_angvel = lerp(-0.2, 0.2, fval);
-        
-      println("Dome rotation: "+degrees(dome_angvel)+" deg/s");
-      break;
-    case DIAL3:
-      hue_shift_deg = lerp(0.0, 360.0, fval);
-      println("Hue shift: "+hue_shift_deg+" deg");
-      break;
-    case DIAL4:
-      sat_scale = 2.0*fval;
-      println("Saturation scale: "+sat_scale);
-      break;
-    case DIAL5:
-      val_scale = 2.0*fval;
-      println("Value scale: "+val_scale);
-      break;
-    case DIAL6:
-      invert = fval;
-      println("Invert: "+invert);
-      break;
-    case DIAL7:
-      dome_coverage = lerp(0.01, 1.0, fval);
-      println("Radial dome coverage: "+dome_coverage);
-      break;
-    case REWIND:
-      if (value > 0)
-        nextAnim(-1);
-      break;
-    case FASTFORWARD:
-      if (value > 0)
-        nextAnim(1);
-      break;
-    case RESET:
-      if (value > 0)
-      {
-        cur_framerate = 30.0;
-        dome_angvel = 0.0;
-        hue_shift_deg = 0.0;
-        sat_scale = 1.0;
-        val_scale = 1.0;
-        invert = 0.0;
-        dome_coverage = 0.9;
-      }
-      break;
-    default:
-      break;
+  case DIAL1:
+    cur_framerate = lerp(-60.0, 60.0, fval);
+    println("Framerate: "+cur_framerate+" fps");
+    break;
+  case DIAL2:
+    if (value >= 61 && value <= 67)
+      dome_angvel = 0.0;
+    else
+      dome_angvel = lerp(-0.2, 0.2, fval);
+
+    println("Dome rotation: "+degrees(dome_angvel)+" deg/s");
+    break;
+  case DIAL3:
+    hue_shift_deg = lerp(0.0, 360.0, fval);
+    println("Hue shift: "+hue_shift_deg+" deg");
+    break;
+  case DIAL4:
+    sat_scale = 2.0*fval;
+    println("Saturation scale: "+sat_scale);
+    break;
+  case DIAL5:
+    val_scale = 2.0*fval;
+    println("Value scale: "+val_scale);
+    break;
+  case DIAL6:
+    invert = fval;
+    println("Invert: "+invert);
+    break;
+  case DIAL7:
+    dome_coverage = lerp(0.01, 1.0, fval);
+    println("Radial dome coverage: "+dome_coverage);
+    break;
+  case DIAL9:
+    refresh = (int) lerp(10, 300, fval);
+    println("Refresh rate: "+refresh);
+    break;
+  case REWIND:
+    if (value > 0)
+      nextAnim(-1);
+    break;
+  case FASTFORWARD:
+    if (value > 0)
+      nextAnim(1);
+    break;
+  case RESET:
+    if (value > 0)
+    {
+      cur_framerate = 30.0;
+      dome_angvel = 0.0;
+      hue_shift_deg = 0.0;
+      sat_scale = 1.0;
+      val_scale = 1.0;
+      invert = 0.0;
+      dome_coverage = 0.9;
+      refresh = 60;
+    }
+    break;
+  default:
+    break;
   }
 }
 
@@ -291,36 +347,39 @@ void draw()
   dome_rotation += dome_angvel / 60.0;
   dome.setTexRotation(dome_rotation);
   dome.setTexExtent(dome_coverage);
-  
+
   // update color transform
   dome.setColorTransformHSVShiftInvert(hue_shift_deg, sat_scale, val_scale, invert);
-  
+
   // ready to draw
   background(0);
-  
+
   if (line_mode)
   {
     // override image if we're in line mode, just draw a line
     stroke(255);
     line(width/2, 0, width/2, height);
-  }
-  else if (img_mode)
+  } else if (img_mode)
   {
     // just blit source to target in image mode
     imageMode(CENTER);
     image(src, width/2, height/2, height, height);
-  }
-  else
+  } else
   {
     // do actual distortion in regular mode
-    
-    // distort into target image
+
+      // distort into target image
     dome.update();
-    
+
     // draw distorted image to screen
     imageMode(CORNER);
     image(targ, 0, 0);
   }
-  
+
+  if (refresh < 300) {
+    if (started + refresh < System.currentTimeMillis() / 1000) {
+      nextAnim(1);
+    }
+  }
 }
 

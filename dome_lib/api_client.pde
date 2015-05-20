@@ -11,7 +11,6 @@ class ProjectApiClient {
   private HashMap<Long, String> idFilename = new HashMap<Long, String>();
   private List<String> playlist = new ArrayList<String>();
   private Set<String> keywords = new HashSet<String>();
-  private int current = 0;
 
   public double lastUpdated = 0;
 
@@ -40,7 +39,7 @@ class ProjectApiClient {
     return JSONObject.parse(get.getContent());
   }
 
-  public void updatePlaylist() {
+  public List<String> updatePlaylist() {
     try {
       GetRequest get = new GetRequest(baseUrl + "/play");
       get.send();
@@ -48,12 +47,12 @@ class ProjectApiClient {
 
       double updated = response.getDouble("updated");
       if (updated <= lastUpdated)
-        return;
+        return null;
       lastUpdated = updated;
 
       String[] keywordArray = response.getJSONArray("keywords").getStringArray();
       keywords = new HashSet<String>(Arrays.asList(keywordArray));
-
+      
       // ignore any items in the playlist that we don't have files for
       playlist = new ArrayList<String>();
       for (long id : response.getJSONArray ("ids").getLongArray()) {
@@ -61,25 +60,11 @@ class ProjectApiClient {
           playlist.add(idFilename.get(id));
         }
       }
-      current = current % playlist.size();
     }
     catch (Exception e) {
       //print("Couldn't update playlist: " + e);
     }
-  }
-
-  public String getCurrentFilename() {
-    return playlist.get(current);
-  }
-
-  public String next() {
-    current = (current + 1) % playlist.size();
-    return getCurrentFilename();
-  }
-
-  public String prev() {
-    current = (current - 1) % playlist.size();
-    return getCurrentFilename();
+    return playlist;
   }
 
   public long getGifId(String filename) {
@@ -88,12 +73,8 @@ class ProjectApiClient {
     return new Long(m.group(1));
   }
 
-  public long getGifId() {
-    return getGifId(getCurrentFilename());
-  }
-
-  public void addToHistory(long startedAt, long stoppedAt, int repetitions) {
-    long id = getGifId();
+  public void addToHistory(String filename, long startedAt, long stoppedAt, int repetitions) {
+    long id = getGifId(filename);
     PostRequest post = new PostRequest(baseUrl + "/history");
     JSONObject history = new JSONObject();
     history.setLong("id", id);
@@ -104,8 +85,8 @@ class ProjectApiClient {
     post.send();
   }
 
-  public HashSet<String> getKeywords() {
-    String url = String.format("%s/%d/keywords", baseUrl, getGifId());
+  public HashSet<String> getKeywords(String filename) {
+    String url = String.format("%s/%d/keywords", baseUrl, getGifId(filename));
     GetRequest get = new GetRequest(url);
     get.send();
     try {
@@ -118,25 +99,25 @@ class ProjectApiClient {
     }
   }
 
-  public void setKeywords(Set<String> keywords) {
+  public void setKeywords(String filename, Set<String> keywords) {
     StringBuffer joined = new StringBuffer();
     for (String k : keywords) {
       joined.append(k);
       joined.append(",");
     }
-    String url = String.format("%s/%d/keywords?keywords=%s", baseUrl, getGifId(), joined);
+    String url = String.format("%s/%d/keywords?keywords=%s", baseUrl, getGifId(filename), joined);
     GetRequest get = new GetRequest(url);
     get.send();
   }
 
-  public void toggleKeyword(String keyword) {
-    HashSet<String> keywords = getKeywords();
+  public void toggleKeyword(String filename, String keyword) {
+    HashSet<String> keywords = getKeywords(filename);
     if (keywords.contains(keyword)) {
       keywords.remove(keyword);
     } else {
       keywords.add(keyword);
     }
-    setKeywords(keywords);
+    setKeywords(filename, keywords);
     println("keywords: " + keywords);
   }
 }
