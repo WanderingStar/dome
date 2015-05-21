@@ -66,6 +66,7 @@ float cur_framerate = 30.0; // can be fractional or negative
 int reps = 0;
 long started;
 int refresh = 60;
+boolean shuffle = true;
 
 // MIDI control
 MidiBus kontrol;
@@ -129,6 +130,9 @@ void updatePlaylist() {
   List<String> nextPlaylist = client.updatePlaylist();
   if (nextPlaylist != null) {
     playlist = nextPlaylist;
+    if (shuffle) {
+      Collections.shuffle(playlist);
+    }
     cur_anim = 0;
   }
 }
