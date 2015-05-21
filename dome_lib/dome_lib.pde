@@ -1,6 +1,8 @@
 import themidibus.*;
 import gifAnimation.*;
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Vector;
 
 // nanoKontrol 1
@@ -57,7 +59,7 @@ List<String> playlist = new ArrayList<String>();
 ;
 HashMap<String, ArrayList<PImage>> loaded = new HashMap<String, ArrayList<PImage>>();
 PImage[] anim_frames;
-int cur_anim = 0;
+int cur_anim = 114;
 int cur_frame = 0;
 float cur_floatframe = 0.0; // higher-resolution frame number, truncated to get cur_frame
 float cur_framerate = 30.0; // can be fractional or negative
@@ -112,11 +114,15 @@ void setup()
   // make list of animations
   client.addDirectory(dataPath("content"));
   updatePlaylist();
-  selectAnimation(playlist.get(0));
+  //cur_anim = 114;
+  selectAnimation(playlist.get(cur_anim));
 
   // configure nanokontrol, if it exists
   MidiBus.list();
   kontrol = new MidiBus(this, "SLIDER/KNOB", "CTRL");
+
+  new File(dataPath("Trash")).mkdir();
+  new File(dataPath("Fix")).mkdir();
 }
 
 void updatePlaylist() {
@@ -129,13 +135,18 @@ void updatePlaylist() {
 
 void loadAnimations() {
   // this is called in a background thread to load an unloaded animations
-  for (String filename : loaded.keySet()) {
+  for (String filename : loaded.keySet ()) {
     synchronized(loaded) {
       if (loaded.get(filename) == null) {
-        println("Loading " + filename + "...");
-        PImage[] frames = Gif.getPImages(this, filename);
-        loaded.put(filename, new ArrayList<PImage>(Arrays.asList(frames)));
-        println("Loaded " + filename + ".");
+        try {
+          // println("Loading " + filename + "...");
+          PImage[] frames = Gif.getPImages(this, filename);
+          loaded.put(filename, new ArrayList<PImage>(Arrays.asList(frames)));
+          // println("Loaded " + filename + ".");
+        } 
+        catch (Exception e) {
+          println("Failed to load " + filename + ": " + e.getMessage());
+        }
       }
     }
   }
@@ -158,22 +169,26 @@ void selectAnimation(String filename) {
   reps = 0;
   started = System.currentTimeMillis() / 1000;
   client.addToHistory(filename, started, 0, 0);
+  println(String.format("%d/%d %s", cur_anim, playlist.size(), filename));
 }
 
 int bound(int n) {
-    return (n < 0 ? playlist.size() : 0) + (n % playlist.size());
+  return (n < 0 ? playlist.size() : 0) + (n % playlist.size());
 }
 
 void nextAnim(int num) {
   if (num > 0) {
     cur_anim = bound(cur_anim + 1);
-  } else {
+  } else if (num < 0) {
     cur_anim = bound(cur_anim - 1);
+  } else {
+    cur_anim = bound(cur_anim);
   }
   updatePlaylist();
   selectAnimation(playlist.get(cur_anim));
   HashSet<String> adjacent = new HashSet<String>(4);
   for (int i = cur_anim - 2; i < cur_anim + 3; i++) {
+    // print(bound(i) + " ");
     adjacent.add(playlist.get(bound(i)));
   }
   synchronized(loaded) {
@@ -183,7 +198,6 @@ void nextAnim(int num) {
         loaded.put(filename, null);
       }
     }
-    println("loaded.size: " + loaded.size());
   }
   thread("loadAnimations"); // background
 }
@@ -210,6 +224,16 @@ void keyPressed()
     sat_scale = 1.0;
     val_scale = 1.0;
     dome_coverage = 0.9;
+  }
+  if (key == 'x') {
+    moveFile("Trash");
+    nextAnim(0);
+    return;
+  }
+  if (key == 'f') {
+    moveFile("Fix");
+    nextAnim(0);
+    return;
   }
   if (key == CODED && keyCode == LEFT) {
     nextAnim(-1);
@@ -380,6 +404,17 @@ void draw()
     if (started + refresh < System.currentTimeMillis() / 1000) {
       nextAnim(1);
     }
+  }
+}
+
+void moveFile(String folder) {
+  try {
+    File current = new File(playlist.get(cur_anim));
+    Files.move(current.toPath(), new File(dataPath(folder+"/"+current.getName())).toPath());
+    playlist.remove(cur_anim);
+  } 
+  catch (IOException e) {
+    print(e);
   }
 }
 

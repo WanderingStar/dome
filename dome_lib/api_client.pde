@@ -55,7 +55,9 @@ class ProjectApiClient {
       
       // ignore any items in the playlist that we don't have files for
       playlist = new ArrayList<String>();
-      for (long id : response.getJSONArray ("ids").getLongArray()) {
+      long[] ids = response.getJSONArray ("ids").getLongArray();
+      Arrays.sort(ids);
+      for (long id : ids) {
         if (idFilename.get(id) != null) {
           playlist.add(idFilename.get(id));
         }
