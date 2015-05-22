@@ -6,7 +6,7 @@ import java.nio.file.Path;
 import java.util.Vector;
 
 int refresh = 60;
-boolean shuffle = false;
+boolean shuffle = true;
 int initial = 0;
 
 // nanoKontrol 1
@@ -27,6 +27,7 @@ final int SLIDER5 = 6;
 final int SLIDER6 = 8;
 final int SLIDER7 = 9;
 final int SLIDER8 = 12;
+final int SLIDER9 = 13;
 final int RECORD = 44;
 final int PLAY = 45;
 final int STOP = 46;
@@ -186,13 +187,18 @@ void selectAnimation(String filename) {
   reps = 0;
   HashMap<String, Float> settings = client.getSettings(filename);
   if (settings != null) {
-    if (settings.get("cur_framerate") != null)
+    println(settings);
+    if (settings.get("cur_framerate") != null) {
+      println(settings.get("cur_framerate"));
+      println(cur_framerate);
       cur_framerate = settings.get("cur_framerate");
+      println(cur_framerate);
+    }
     if (settings.get("dome_angvel") != null)
       cur_framerate = settings.get("dome_angvel");
     if (settings.get("hue_shift_deg") != null)
       cur_framerate = settings.get("hue_shift_deg");
-    if (settings.get("sat_scale") != null)
+    if (settings.get("sat_scale") != null) 
       cur_framerate = settings.get("sat_scale");
     if (settings.get("val_scale") != null)
       cur_framerate = settings.get("val_scale");
@@ -300,6 +306,10 @@ void keyPressed()
     client.toggleKeyword(playlist.get(cur_anim), "colorful");
     return;
   }
+  if (key == '9') {
+    client.toggleKeyword(playlist.get(cur_anim), "creepy");
+    return;
+  }
 
   // fall through to move to the next animation
   nextAnim(1);
@@ -314,10 +324,12 @@ void controllerChange(int channel, int number, int value) {
   // all number are in scene 1
   switch (number) {
   case DIAL1:
+  case SLIDER1:
     cur_framerate = lerp(-60.0, 60.0, fval);
     println("Framerate: "+cur_framerate+" fps");
     break;
   case DIAL2:
+  case SLIDER2:
     if (value >= 61 && value <= 67)
       dome_angvel = 0.0;
     else
@@ -326,26 +338,32 @@ void controllerChange(int channel, int number, int value) {
     println("Dome rotation: "+degrees(dome_angvel)+" deg/s");
     break;
   case DIAL3:
+  case SLIDER3:
     hue_shift_deg = lerp(0.0, 360.0, fval);
     println("Hue shift: "+hue_shift_deg+" deg");
     break;
   case DIAL4:
+  case SLIDER4:
     sat_scale = 2.0*fval;
     println("Saturation scale: "+sat_scale);
     break;
   case DIAL5:
+  case SLIDER5:
     val_scale = 2.0*fval;
     println("Value scale: "+val_scale);
     break;
   case DIAL6:
+  case SLIDER6:
     invert = fval;
     println("Invert: "+invert);
     break;
   case DIAL7:
+  case SLIDER7:
     dome_coverage = lerp(0.01, 1.0, fval);
     println("Radial dome coverage: "+dome_coverage);
     break;
   case DIAL9:
+  case SLIDER9:
     refresh = (int) lerp(10, 300, fval);
     println("Refresh rate: "+refresh);
     break;
@@ -389,6 +407,8 @@ void controllerChange(int channel, int number, int value) {
         settings.put("invert", invert);
       if (dome_coverage != DEFAULT_CUR_FRAMERATE)
         settings.put("dome_coverage", dome_coverage);
+      println(settings);
+      client.setSettings(playlist.get(cur_anim), settings);
     }
     break;
   case STOP:
