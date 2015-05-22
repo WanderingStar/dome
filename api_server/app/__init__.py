@@ -54,6 +54,19 @@ def post_keywords(post_id):
             db.post.update({'id': post_id}, {'$set': {'keywords' : keywords}})
     return jsonify(db.post.find_one({'id': post_id}, {'keywords':1, '_id':0}))
 
+@app.route('/<int:post_id>/settings', methods=['POST', 'GET', 'PUT', 'DELETE'])
+def post_settings(post_id):
+    post = db.post.find_one({'id': post_id}, {'_id':0})
+    if not post:
+        abort(404)
+    if request.method == 'POST':
+        if request.json:
+            settings = request.json
+        elif 'json' in request.form:
+            settings = json.loads(request.form['json'])
+        db.post.update({'id': post_id}, {'$set': {'settings': settings}});
+    return jsonify(post.get('settings',{}))
+
 @app.route("/posts", methods=['POST', 'GET'])
 def posts():
     keywords = list(arg(request, 'keywords', []))

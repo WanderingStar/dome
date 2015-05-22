@@ -9,3 +9,4 @@ application.windows64
 application.macosx
 pydome
 *.mov
+*.pyc

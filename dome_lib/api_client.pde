@@ -111,6 +111,35 @@ class ProjectApiClient {
     GetRequest get = new GetRequest(url);
     get.send();
   }
+  
+  public HashMap<String,Float> getSettings(String filename) {
+    String url = String.format("%s/%d/settings", baseUrl, getGifId(filename));
+    GetRequest get = new GetRequest(url);
+    get.send();
+    try {
+      JSONObject response = JSONObject.parse(get.getContent());
+      HashMap<String,Float> settings = new HashMap<String,Float>();
+      for (Object key : response.keys()) {
+        settings.put((String) key, response.getFloat((String) key));
+      }
+      return settings;
+    } 
+    catch (Exception e) {
+      return null;
+    }
+  }
+
+
+  public void setSettings(String filename, Map<String,Float> settings) {
+    String url = String.format("%s/%d/settings", baseUrl, getGifId(filename));
+    PostRequest post = new PostRequest(url);
+    JSONObject json = new JSONObject();
+    for (String key : settings.keySet()) {
+      json.setFloat(key, settings.get(key));
+    }
+    post.addData("json", json.toString());
+    post.send();
+  }
 
   public void toggleKeyword(String filename, String keyword) {
     HashSet<String> keywords = getKeywords(filename);

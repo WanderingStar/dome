@@ -5,6 +5,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Vector;
 
+int refresh = 60;
+boolean shuffle = false;
+int initial = 0;
+
 // nanoKontrol 1
 final int DIAL1 = 14;
 final int DIAL2 = 15;
@@ -23,6 +27,9 @@ final int SLIDER5 = 6;
 final int SLIDER6 = 8;
 final int SLIDER7 = 9;
 final int SLIDER8 = 12;
+final int RECORD = 44;
+final int PLAY = 45;
+final int STOP = 46;
 final int REWIND = 47;
 final int FASTFORWARD = 48;
 final int RESET = 49;
@@ -48,6 +55,15 @@ final int RESET = 49;
  final int FASTFORWARD = 44;
  final int RESET = 46;*/
 
+final float DEFAULT_CUR_FRAMERATE = 30.0;
+final float DEFAULT_DOME_ANGVEL = 0.0;
+final float DEFAULT_HUE_SHIFT_DEG = 0.0;
+final float DEFAULT_SAT_SCALE = 1.0;
+final float DEFAULT_VAL_SCALE = 1.0;
+final float DEFAULT_INVERT = 0.0;
+final float DEFAULT_DOME_COVERAGE = 0.9;
+final int DEFAULT_REFRESH = 60;
+
 // dome distortion
 PGraphics src, targ;
 DomeDistort dome;
@@ -56,17 +72,14 @@ DomeDistort dome;
 //ArrayList<String> anims = new ArrayList<String>();
 ProjectApiClient client = new ProjectApiClient("http://localhost:8000");
 List<String> playlist = new ArrayList<String>();
-;
 HashMap<String, ArrayList<PImage>> loaded = new HashMap<String, ArrayList<PImage>>();
 PImage[] anim_frames;
-int cur_anim = 114;
+int cur_anim = 0;
 int cur_frame = 0;
 float cur_floatframe = 0.0; // higher-resolution frame number, truncated to get cur_frame
-float cur_framerate = 30.0; // can be fractional or negative
+float cur_framerate = DEFAULT_CUR_FRAMERATE; // can be fractional or negative
 int reps = 0;
 long started;
-int refresh = 60;
-boolean shuffle = true;
 
 // MIDI control
 MidiBus kontrol;
@@ -76,15 +89,15 @@ boolean line_mode = false; // just draws a vertical line, for setup
 boolean img_mode  = false; // dump raw image to screen, no distortion
 
 // color params
-float hue_shift_deg = 0.0;
-float sat_scale = 1.0;
-float val_scale = 1.0;
-float invert = 0.0;
+float hue_shift_deg = DEFAULT_HUE_SHIFT_DEG;
+float sat_scale = DEFAULT_SAT_SCALE;
+float val_scale = DEFAULT_VAL_SCALE;
+float invert = DEFAULT_INVERT;
 
 // dome mapping params
 float dome_rotation = 0.0; // current rotation of dome (radians)
-float dome_angvel = 0.0; // rotation speed of dome, in rad / s
-float dome_coverage = 0.9; // radial extent of dome covered by texture
+float dome_angvel = DEFAULT_DOME_ANGVEL; // rotation speed of dome, in rad / s
+float dome_coverage = DEFAULT_DOME_COVERAGE; // radial extent of dome covered by texture
 
 void setup()
 {
@@ -97,7 +110,7 @@ void setup()
   // Framerate set to 61, since apparently Processing's timing is sometimes
   // off and we get judder when set to 60.
   // Animation playback speed is controlled by cur_framerate.
-  frameRate(61);
+  frameRate(15);
 
   // set up source buffer for the actual frame data
   src = createGraphics(1024, 1024, P3D);
@@ -115,8 +128,8 @@ void setup()
   // make list of animations
   client.addDirectory(dataPath("content"));
   updatePlaylist();
-  //cur_anim = 114;
-  selectAnimation(playlist.get(cur_anim));
+  cur_anim = initial;
+  nextAnim(0);
 
   // configure nanokontrol, if it exists
   MidiBus.list();
@@ -171,6 +184,23 @@ void selectAnimation(String filename) {
   cur_frame = 0;
   cur_floatframe = 0.0;
   reps = 0;
+  HashMap<String, Float> settings = client.getSettings(filename);
+  if (settings != null) {
+    if (settings.get("cur_framerate") != null)
+      cur_framerate = settings.get("cur_framerate");
+    if (settings.get("dome_angvel") != null)
+      cur_framerate = settings.get("dome_angvel");
+    if (settings.get("hue_shift_deg") != null)
+      cur_framerate = settings.get("hue_shift_deg");
+    if (settings.get("sat_scale") != null)
+      cur_framerate = settings.get("sat_scale");
+    if (settings.get("val_scale") != null)
+      cur_framerate = settings.get("val_scale");
+    if (settings.get("invert") != null)
+      cur_framerate = settings.get("invert");
+    if (settings.get("dome_coverage") != null)
+      cur_framerate = settings.get("dome_coverage");
+  }
   started = System.currentTimeMillis() / 1000;
   client.addToHistory(filename, started, 0, 0);
   println(String.format("%d/%d %s", cur_anim, playlist.size(), filename));
@@ -221,13 +251,20 @@ void keyPressed()
     img_mode = !img_mode;
     return;
   }
+  if (key == 'g') {
+    selectAnimation(dataPath("000polargrid.gif"));
+    cur_anim--;
+    return;
+  }
   if (key == 'r') {
-    cur_framerate = 30.0;
-    dome_angvel = 0.0;
-    hue_shift_deg = 0.0;
-    sat_scale = 1.0;
-    val_scale = 1.0;
-    dome_coverage = 0.9;
+    cur_framerate = DEFAULT_CUR_FRAMERATE;
+    dome_angvel = DEFAULT_DOME_ANGVEL;
+    hue_shift_deg = DEFAULT_HUE_SHIFT_DEG;
+    sat_scale = DEFAULT_SAT_SCALE;
+    val_scale = DEFAULT_VAL_SCALE;
+    invert = DEFAULT_INVERT;
+    dome_coverage = DEFAULT_DOME_COVERAGE;
+    refresh = DEFAULT_REFRESH;
   }
   if (key == 'x') {
     moveFile("Trash");
@@ -323,14 +360,42 @@ void controllerChange(int channel, int number, int value) {
   case RESET:
     if (value > 0)
     {
-      cur_framerate = 30.0;
-      dome_angvel = 0.0;
-      hue_shift_deg = 0.0;
-      sat_scale = 1.0;
-      val_scale = 1.0;
-      invert = 0.0;
-      dome_coverage = 0.9;
-      refresh = 60;
+
+      cur_framerate = DEFAULT_CUR_FRAMERATE;
+      dome_angvel = DEFAULT_DOME_ANGVEL;
+      hue_shift_deg = DEFAULT_HUE_SHIFT_DEG;
+      sat_scale = DEFAULT_SAT_SCALE;
+      val_scale = DEFAULT_VAL_SCALE;
+      invert = DEFAULT_INVERT;
+      dome_coverage = DEFAULT_DOME_COVERAGE;
+      refresh = DEFAULT_REFRESH;
+    }
+    break;
+  case RECORD:
+    if (value > 0)
+    {
+      HashMap<String, Float> settings = new HashMap<String, Float>();
+      if (cur_framerate != DEFAULT_CUR_FRAMERATE)
+        settings.put("cur_framerate", cur_framerate);
+      if (dome_angvel != DEFAULT_DOME_ANGVEL)
+        settings.put("dome_angvel", dome_angvel);
+      if (hue_shift_deg != DEFAULT_HUE_SHIFT_DEG)
+        settings.put("hue_shift_deg", hue_shift_deg);
+      if (sat_scale != DEFAULT_SAT_SCALE)
+        settings.put("sat_scale", sat_scale);
+      if (val_scale != DEFAULT_VAL_SCALE)
+        settings.put("val_scale", val_scale);
+      if (invert != DEFAULT_INVERT)
+        settings.put("invert", invert);
+      if (dome_coverage != DEFAULT_CUR_FRAMERATE)
+        settings.put("dome_coverage", dome_coverage);
+    }
+    break;
+  case STOP:
+    if (value > 0)
+    {
+      moveFile("Trash");
+      nextAnim(0);
     }
     break;
   default:
