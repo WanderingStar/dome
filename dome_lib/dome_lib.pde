@@ -20,6 +20,24 @@ final int DIAL6 = 19;
 final int DIAL7 = 20;
 final int DIAL8 = 21;
 final int DIAL9 = 22;
+final int BUTTON1H = 23;
+final int BUTTON1L = 33;
+final int BUTTON2H = 24;
+final int BUTTON2L = 34;
+final int BUTTON3H = 25;
+final int BUTTON3L = 35;
+final int BUTTON4H = 26;
+final int BUTTON4L = 36;
+final int BUTTON5H = 27;
+final int BUTTON5L = 37;
+final int BUTTON6H = 28;
+final int BUTTON6L = 38;
+final int BUTTON7H = 29;
+final int BUTTON7L = 39;
+final int BUTTON8H = 30;
+final int BUTTON8L = 40;
+final int BUTTON9H = 31;
+final int BUTTON9L = 41;
 final int SLIDER1 = 2;
 final int SLIDER2 = 3;
 final int SLIDER3 = 4;
@@ -35,6 +53,11 @@ final int STOP = 46;
 final int REWIND = 47;
 final int FASTFORWARD = 48;
 final int RESET = 49;
+
+String[] KEYWORDS = { 
+  "chill", "energetic", "monochrome", "colorful", "whoah", 
+  "breathing", "falling", "organic", "blinky", "creepy"
+};
 
 // nanoKontrol 2
 /*final int DIAL1 = 16;
@@ -129,7 +152,7 @@ void setup()
   dome.setTexExtent(0.9); // set to < 1.0 to shrink towards center of dome
   dome.setTexRotation(0); // set to desired rotation angle in radians
 
-  println(dataPath(""));
+  //println(dataPath(""));
 
   // make list of animations
   client.addDirectory(dataPath("content"));
@@ -148,6 +171,7 @@ void setup()
 void updatePlaylist() {
   List<String> nextPlaylist = client.updatePlaylist();
   if (nextPlaylist != null) {
+    println("playlist updated");
     playlist = nextPlaylist;
     if (shuffle) {
       Collections.shuffle(playlist);
@@ -192,7 +216,7 @@ void selectAnimation(String filename) {
   reps = 0;
   HashMap<String, Float> settings = client.getSettings(filename);
   if (settings != null) {
-    println(settings);
+    //println("Settings:" + settings);
     if (settings.get("cur_framerate") != null) {
       println(settings.get("cur_framerate"));
       println(cur_framerate);
@@ -295,24 +319,9 @@ void keyPressed()
     nextAnim(1);
     return;
   }
-  if (key == '1') {
-    client.toggleKeyword(playlist.get(cur_anim), "chill");
-    return;
-  }
-  if (key == '2') {
-    client.toggleKeyword(playlist.get(cur_anim), "energetic");
-    return;
-  }
-  if (key == '3') {
-    client.toggleKeyword(playlist.get(cur_anim), "monochrome");
-    return;
-  }
-  if (key == '4') {
-    client.toggleKeyword(playlist.get(cur_anim), "colorful");
-    return;
-  }
-  if (key == '9') {
-    client.toggleKeyword(playlist.get(cur_anim), "creepy");
+  if (key >= '1' && key <= '9') {
+    String keyword = KEYWORDS[((int) key) - 49];
+    client.toggleKeyword(playlist.get(cur_anim), keyword);
     return;
   }
 
@@ -359,7 +368,6 @@ void controllerChange(int channel, int number, int value) {
     break;
   case DIAL6:
   case SLIDER6:
-    invert = fval;
     invert = value < 64 ? 0 : 1;
     println("Invert: "+invert);
     break;
@@ -418,7 +426,7 @@ void controllerChange(int channel, int number, int value) {
         settings.put("invert", invert);
       if (dome_coverage != DEFAULT_CUR_FRAMERATE)
         settings.put("dome_coverage", dome_coverage);
-      println(settings);
+      //println("Settings: " + settings);
       client.setSettings(playlist.get(cur_anim), settings);
     }
     break;
