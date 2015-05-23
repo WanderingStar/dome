@@ -360,6 +360,7 @@ void controllerChange(int channel, int number, int value) {
   case DIAL6:
   case SLIDER6:
     invert = fval;
+    invert = value < 64 ? 0 : 1;
     println("Invert: "+invert);
     break;
   case DIAL7:
