@@ -6,8 +6,9 @@ import java.nio.file.Path;
 import java.util.Vector;
 
 int refresh = 60;
-boolean shuffle = true;
+boolean shuffle = false;
 int initial = 0;
+boolean present = false;
 
 // nanoKontrol 1
 final int DIAL1 = 14;
@@ -102,11 +103,15 @@ float dome_coverage = DEFAULT_DOME_COVERAGE; // radial extent of dome covered by
 
 void setup()
 {
-  //size(1024, 1024, P3D);
-  //size(1920, 1080, P3D);
-  //size(1280, 720, P3D);
-  //size(854, 480, P3D);
-  size(960, 540, P3D);
+  if (present) {
+    size(1920, 1080, P3D);
+  } else {
+    //size(1024, 1024, P3D);
+    //size(1920, 1080, P3D);
+    //size(1280, 720, P3D);
+    //size(854, 480, P3D);
+    size(960, 540, P3D);
+  }
 
   // Framerate set to 61, since apparently Processing's timing is sometimes
   // off and we get judder when set to 60.
@@ -153,8 +158,8 @@ void updatePlaylist() {
 
 void loadAnimations() {
   // this is called in a background thread to load an unloaded animations
-  for (String filename : loaded.keySet ()) {
-    synchronized(loaded) {
+  synchronized(loaded) {
+    for (String filename : loaded.keySet ()) {
       if (loaded.get(filename) == null) {
         try {
           // println("Loading " + filename + "...");
@@ -195,17 +200,17 @@ void selectAnimation(String filename) {
       println(cur_framerate);
     }
     if (settings.get("dome_angvel") != null)
-      cur_framerate = settings.get("dome_angvel");
+      dome_angvel = settings.get("dome_angvel");
     if (settings.get("hue_shift_deg") != null)
-      cur_framerate = settings.get("hue_shift_deg");
+      hue_shift_deg = settings.get("hue_shift_deg");
     if (settings.get("sat_scale") != null) 
-      cur_framerate = settings.get("sat_scale");
+      sat_scale = settings.get("sat_scale");
     if (settings.get("val_scale") != null)
-      cur_framerate = settings.get("val_scale");
+      val_scale = settings.get("val_scale");
     if (settings.get("invert") != null)
-      cur_framerate = settings.get("invert");
+      invert = settings.get("invert");
     if (settings.get("dome_coverage") != null)
-      cur_framerate = settings.get("dome_coverage");
+      dome_coverage = settings.get("dome_coverage");
   }
   started = System.currentTimeMillis() / 1000;
   client.addToHistory(filename, started, 0, 0);
@@ -333,7 +338,7 @@ void controllerChange(int channel, int number, int value) {
     if (value >= 61 && value <= 67)
       dome_angvel = 0.0;
     else
-      dome_angvel = lerp(-0.2, 0.2, fval);
+      dome_angvel = lerp(-6.28, 6.28, fval);
 
     println("Dome rotation: "+degrees(dome_angvel)+" deg/s");
     break;
@@ -361,6 +366,11 @@ void controllerChange(int channel, int number, int value) {
   case SLIDER7:
     dome_coverage = lerp(0.01, 1.0, fval);
     println("Radial dome coverage: "+dome_coverage);
+    break;
+  case DIAL8:
+  case SLIDER8:
+    dome_rotation = lerp(0.01, 6.28, fval);
+    println("Rotation: "+dome_rotation);
     break;
   case DIAL9:
   case SLIDER9:
@@ -501,6 +511,7 @@ void moveFile(String folder) {
     File current = new File(playlist.get(cur_anim));
     Files.move(current.toPath(), new File(dataPath(folder+"/"+current.getName())).toPath());
     playlist.remove(cur_anim);
+    print("moved to " + dataPath(folder+"/"+current.getName()));
   } 
   catch (IOException e) {
     print(e);

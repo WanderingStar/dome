@@ -5,7 +5,7 @@ import java.util.*;
 
 
 class ProjectApiClient {
-  public final Pattern idGifPattern = Pattern.compile("(\\d{3,}).*\\.gif$");
+  public final Pattern idGifPattern = Pattern.compile("post_(\\d{3,}).*\\.gif$");
 
   private String baseUrl = "http://localhost:8000";
   private HashMap<Long, String> idFilename = new HashMap<Long, String>();
@@ -21,16 +21,19 @@ class ProjectApiClient {
   public void addDirectory(String path) {
     println("adding content from " + path);
     File dir = new File(path);
-    for (String filename : dir.list ()) {
+    int i = 0;
+    for (String filename : dir.list()) {
       String filepath = path + "/" + filename;
       Matcher m = idGifPattern.matcher(filename);
       if (m.find()) {
         idFilename.put(new Long(m.group(1)), filepath);
         playlist.add(filepath);
+        i++;
       } else if (new File(filepath).isDirectory()) {
         addDirectory(filepath);
       }
     }
+    println("Found " + i + " images in " + path);
   }
 
   private JSONObject get(String urlPath) {
@@ -57,11 +60,13 @@ class ProjectApiClient {
       playlist = new ArrayList<String>();
       long[] ids = response.getJSONArray ("ids").getLongArray();
       Arrays.sort(ids);
+      int i = 0;
       for (long id : ids) {
         if (idFilename.get(id) != null) {
           playlist.add(idFilename.get(id));
         }
       }
+      print("Found " + i + " matching images");
     }
     catch (Exception e) {
       //print("Couldn't update playlist: " + e);
