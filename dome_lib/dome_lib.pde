@@ -6,9 +6,9 @@ import java.nio.file.Path;
 import java.util.Vector;
 
 int refresh = 60;
-boolean shuffle = false;
+boolean shuffle = true;
 int initial = 0;
-boolean present = false;
+boolean present = true;
 
 // nanoKontrol 1
 final int DIAL1 = 14;
@@ -57,8 +57,6 @@ final int BUTTON1HSCENE2 = 67;
 final int BUTTON9HSCENE2 = 75;
 final int BUTTON1LSCENE2 = 76;
 final int BUTTON9LSCENE2 = 84;
-
-
 
 String[] KEYWORDS = { 
   "chill", "energetic", "monochrome", "colorful", "whoah", 
