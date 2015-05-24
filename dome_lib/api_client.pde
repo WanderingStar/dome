@@ -22,7 +22,7 @@ class ProjectApiClient {
     println("adding content from " + path);
     File dir = new File(path);
     int i = 0;
-    for (String filename : dir.list()) {
+    for (String filename : dir.list ()) {
       String filepath = path + "/" + filename;
       Matcher m = idGifPattern.matcher(filename);
       if (m.find()) {
@@ -44,18 +44,23 @@ class ProjectApiClient {
 
   public List<String> updatePlaylist() {
     try {
-      GetRequest get = new GetRequest(baseUrl + "/play");
+      StringBuffer url = new StringBuffer(baseUrl + "/play");
+      println("getting playlist: " + url);
+      GetRequest get = new GetRequest(url.toString());
       get.send();
       JSONObject response = JSONObject.parse(get.getContent());
 
       double updated = response.getDouble("updated");
-      if (updated <= lastUpdated)
+      println("Last updated: " + (updated - lastUpdated));
+      if (updated <= lastUpdated) {
+        println("playlist unchanged");
         return null;
+      }
       lastUpdated = updated;
 
       String[] keywordArray = response.getJSONArray("keywords").getStringArray();
       keywords = new HashSet<String>(Arrays.asList(keywordArray));
-      
+
       // ignore any items in the playlist that we don't have files for
       playlist = new ArrayList<String>();
       long[] ids = response.getJSONArray ("ids").getLongArray();
@@ -64,14 +69,36 @@ class ProjectApiClient {
       for (long id : ids) {
         if (idFilename.get(id) != null) {
           playlist.add(idFilename.get(id));
+          i++;
         }
       }
-      print("Found " + i + " matching images");
+      println("Found " + i + " matching images");
     }
     catch (Exception e) {
-      //print("Couldn't update playlist: " + e);
+      println("Couldn't update playlist: " + e);
     }
     return playlist;
+  }
+
+  public void selectKeyword(String keyword, boolean on) {
+    if (on) {
+      keywords.add(keyword);
+    } else {
+      keywords.remove(keyword);
+    }
+    println("Selected keywords: " + keywords);
+
+    StringBuffer url = new StringBuffer(baseUrl + "/play");
+    url.append("?keywords=");
+    if (keywords.size() == 0) {
+      url.append("-");
+    } else {
+      for (String kw : keywords) {
+        url.append(kw + ",");
+      }
+    }
+    GetRequest get = new GetRequest(url.toString());
+    get.send();
   }
 
   public long getGifId(String filename) {
@@ -116,15 +143,15 @@ class ProjectApiClient {
     GetRequest get = new GetRequest(url);
     get.send();
   }
-  
-  public HashMap<String,Float> getSettings(String filename) {
+
+  public HashMap<String, Float> getSettings(String filename) {
     String url = String.format("%s/%d/settings", baseUrl, getGifId(filename));
     GetRequest get = new GetRequest(url);
     get.send();
     try {
       JSONObject response = JSONObject.parse(get.getContent());
-      HashMap<String,Float> settings = new HashMap<String,Float>();
-      for (Object key : response.keys()) {
+      HashMap<String, Float> settings = new HashMap<String, Float>();
+      for (Object key : response.keys ()) {
         settings.put((String) key, response.getFloat((String) key));
       }
       return settings;
@@ -135,15 +162,26 @@ class ProjectApiClient {
   }
 
 
-  public void setSettings(String filename, Map<String,Float> settings) {
+  public void setSettings(String filename, Map<String, Float> settings) {
     String url = String.format("%s/%d/settings", baseUrl, getGifId(filename));
     PostRequest post = new PostRequest(url);
     JSONObject json = new JSONObject();
-    for (String key : settings.keySet()) {
+    for (String key : settings.keySet ()) {
       json.setFloat(key, settings.get(key));
     }
     post.addData("json", json.toString());
     post.send();
+  }
+
+  public void setKeyword(String filename, String keyword, boolean present) {
+    HashSet<String> keywords = getKeywords(filename);
+    if (keywords.contains(keyword) && !present) {
+      keywords.remove(keyword);
+    } else if (!keywords.contains(keyword) && present) {
+      keywords.add(keyword);
+    }
+    setKeywords(filename, keywords);
+    println("keywords: " + keywords);
   }
 
   public void toggleKeyword(String filename, String keyword) {

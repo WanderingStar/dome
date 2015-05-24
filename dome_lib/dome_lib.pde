@@ -53,6 +53,12 @@ final int STOP = 46;
 final int REWIND = 47;
 final int FASTFORWARD = 48;
 final int RESET = 49;
+final int BUTTON1HSCENE2 = 67;
+final int BUTTON9HSCENE2 = 75;
+final int BUTTON1LSCENE2 = 76;
+final int BUTTON9LSCENE2 = 84;
+
+
 
 String[] KEYWORDS = { 
   "chill", "energetic", "monochrome", "colorful", "whoah", 
@@ -171,12 +177,16 @@ void setup()
 void updatePlaylist() {
   List<String> nextPlaylist = client.updatePlaylist();
   if (nextPlaylist != null) {
-    println("playlist updated");
-    playlist = nextPlaylist;
-    if (shuffle) {
-      Collections.shuffle(playlist);
+    if (nextPlaylist.size() > 0) {
+      println("playlist updated");
+      playlist = nextPlaylist;
+      if (shuffle) {
+        Collections.shuffle(playlist);
+      }
+      cur_anim = 0;
+    } else {
+      println("playlist is empty. not updating");
     }
-    cur_anim = 0;
   }
 }
 
@@ -439,6 +449,28 @@ void controllerChange(int channel, int number, int value) {
     break;
   default:
     break;
+  }
+  if (value > 0 && number >= BUTTON1H && number <= BUTTON9H) {
+    String keyword = KEYWORDS[number - BUTTON1H];
+    println("Adding keyword " + keyword);
+    client.setKeyword(playlist.get(cur_anim), keyword, true);
+    return;
+  }
+  if (value > 0 && number >= BUTTON1L && number <= BUTTON9L) {
+    String keyword = KEYWORDS[number - BUTTON1L];
+    println("Removing keyword " + keyword);
+    client.setKeyword(playlist.get(cur_anim), keyword, false);
+    return;
+  }
+  if (value > 0 && number >= BUTTON1HSCENE2 && number <= BUTTON9HSCENE2) {
+    String keyword = KEYWORDS[number - BUTTON1HSCENE2];
+    client.selectKeyword(keyword, true);
+    return;
+  }
+  if (value > 0 && number >= BUTTON1LSCENE2 && number <= BUTTON9LSCENE2) {
+    String keyword = KEYWORDS[number - BUTTON1LSCENE2];
+    client.selectKeyword(keyword, false);
+    return;
   }
 }
 
