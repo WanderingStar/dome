@@ -91,6 +91,7 @@ final float DEFAULT_SAT_SCALE = 1.0;
 final float DEFAULT_VAL_SCALE = 1.0;
 final float DEFAULT_INVERT = 0.0;
 final float DEFAULT_DOME_COVERAGE = 0.9;
+final float DEFAULT_ROTATION = 0.0;
 final int DEFAULT_REFRESH = 60;
 
 // dome distortion
@@ -295,7 +296,7 @@ void keyPressed()
     return;
   }
   if (key == 'g') {
-    selectAnimation(dataPath("000polargrid.gif"));
+    selectAnimation(dataPath("polargrid_post_000-0.gif"));
     cur_anim--;
     return;
   }
@@ -412,8 +413,9 @@ void controllerChange(int channel, int number, int value) {
       sat_scale = DEFAULT_SAT_SCALE;
       val_scale = DEFAULT_VAL_SCALE;
       invert = DEFAULT_INVERT;
-      dome_coverage = DEFAULT_DOME_COVERAGE;
+      //dome_coverage = DEFAULT_DOME_COVERAGE;
       refresh = DEFAULT_REFRESH;
+      dome_rotation = DEFAULT_ROTATION;
     }
     break;
   case RECORD:
@@ -434,6 +436,8 @@ void controllerChange(int channel, int number, int value) {
         settings.put("invert", invert);
       if (dome_coverage != DEFAULT_CUR_FRAMERATE)
         settings.put("dome_coverage", dome_coverage);
+      if (dome_rotation != DEFAULT_ROTATION && dome_angvel == 0)
+        settings.put("dome_rotation", dome_rotation);
       //println("Settings: " + settings);
       client.setSettings(playlist.get(cur_anim), settings);
     }
