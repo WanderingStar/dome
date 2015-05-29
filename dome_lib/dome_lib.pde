@@ -129,10 +129,14 @@ float dome_rotation = 0.0; // current rotation of dome (radians)
 float dome_angvel = DEFAULT_DOME_ANGVEL; // rotation speed of dome, in rad / s
 float dome_coverage = DEFAULT_DOME_COVERAGE; // radial extent of dome covered by texture
 
+boolean sketchFullScreen() {
+  return present;
+}
+
 void setup()
 {
   if (present) {
-    size(1920, 1080, P3D);
+    size(displayWidth, displayHeight, P3D);
   } else {
     //size(1024, 1024, P3D);
     //size(1920, 1080, P3D);
