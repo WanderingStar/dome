@@ -8,81 +8,117 @@ import java.util.Vector;
 int refresh = 60;
 boolean shuffle = true;
 int initial = 0;
-boolean present = true;
+boolean present = false;
 
 // nanoKontrol 1
-final int DIAL1 = 14;
-final int DIAL2 = 15;
-final int DIAL3 = 16;
-final int DIAL4 = 17;
-final int DIAL5 = 18;
-final int DIAL6 = 19;
-final int DIAL7 = 20;
-final int DIAL8 = 21;
-final int DIAL9 = 22;
-final int BUTTON1H = 23;
-final int BUTTON1L = 33;
-final int BUTTON2H = 24;
-final int BUTTON2L = 34;
-final int BUTTON3H = 25;
-final int BUTTON3L = 35;
-final int BUTTON4H = 26;
-final int BUTTON4L = 36;
-final int BUTTON5H = 27;
-final int BUTTON5L = 37;
-final int BUTTON6H = 28;
-final int BUTTON6L = 38;
-final int BUTTON7H = 29;
-final int BUTTON7L = 39;
-final int BUTTON8H = 30;
-final int BUTTON8L = 40;
-final int BUTTON9H = 31;
-final int BUTTON9L = 41;
-final int SLIDER1 = 2;
-final int SLIDER2 = 3;
-final int SLIDER3 = 4;
-final int SLIDER4 = 5;
-final int SLIDER5 = 6;
-final int SLIDER6 = 8;
-final int SLIDER7 = 9;
-final int SLIDER8 = 12;
-final int SLIDER9 = 13;
-final int RECORD = 44;
-final int PLAY = 45;
-final int STOP = 46;
-final int REWIND = 47;
-final int FASTFORWARD = 48;
-final int RESET = 49;
-final int BUTTON1HSCENE2 = 67;
-final int BUTTON9HSCENE2 = 75;
-final int BUTTON1LSCENE2 = 76;
-final int BUTTON9LSCENE2 = 84;
+/*final int DIAL1 = 14;
+ final int DIAL2 = 15;
+ final int DIAL3 = 16;
+ final int DIAL4 = 17;
+ final int DIAL5 = 18;
+ final int DIAL6 = 19;
+ final int DIAL7 = 20;
+ final int DIAL8 = 21;
+ final int DIAL9 = 22;
+ final int BUTTON1H = 23;
+ final int BUTTON1L = 33;
+ final int BUTTON2H = 24;
+ final int BUTTON2L = 34;
+ final int BUTTON3H = 25;
+ final int BUTTON3L = 35;
+ final int BUTTON4H = 26;
+ final int BUTTON4L = 36;
+ final int BUTTON5H = 27;
+ final int BUTTON5L = 37;
+ final int BUTTON6H = 28;
+ final int BUTTON6L = 38;
+ final int BUTTON7H = 29;
+ final int BUTTON7L = 39;
+ final int BUTTON8H = 30;
+ final int BUTTON8L = 40;
+ final int BUTTON9H = 31;
+ final int BUTTON9L = 41;
+ final int SLIDER1 = 2;
+ final int SLIDER2 = 3;
+ final int SLIDER3 = 4;
+ final int SLIDER4 = 5;
+ final int SLIDER5 = 6;
+ final int SLIDER6 = 8;
+ final int SLIDER7 = 9;
+ final int SLIDER8 = 12;
+ final int SLIDER9 = 13;
+ final int RECORD = 44;
+ final int PLAY = 45;
+ final int STOP = 46;
+ final int REWIND = 47;
+ final int FASTFORWARD = 48;
+ final int RESET = 49;
+ final int BUTTON1HSCENE2 = 67;
+ final int BUTTON9HSCENE2 = 75;
+ final int BUTTON1LSCENE2 = 76;
+ final int BUTTON9LSCENE2 = 84; */
 
 String[] KEYWORDS = { 
   "chill", "energetic", "monochrome", "colorful", "whoah", 
   "breathing", "falling", "organic", "blinky", "creepy"
 };
 
+int[] LEDS = {
+  32, 33, 34, 35, 36, 37, 38, 39, 
+  48, 49, 50, 51, 52, 53, 54, 55, 
+  64, 65, 66, 67, 68, 69, 70, 71
+};
+
+
 // nanoKontrol 2
-/*final int DIAL1 = 16;
- final int DIAL2 = 17;
- final int DIAL3 = 18;
- final int DIAL4 = 19;
- final int DIAL5 = 20;
- final int DIAL6 = 21;
- final int DIAL7 = 22;
- final int DIAL8 = 23;
- final int SLIDER1 = 0;
- final int SLIDER2 = 1;
- final int SLIDER3 = 2;
- final int SLIDER4 = 3;
- final int SLIDER5 = 4;
- final int SLIDER6 = 5;
- final int SLIDER7 = 6;
- final int SLIDER8 = 7;
- final int REWIND = 43;
- final int FASTFORWARD = 44;
- final int RESET = 46;*/
+final int DIAL1 = 16;
+final int DIAL2 = 17;
+final int DIAL3 = 18;
+final int DIAL4 = 19;
+final int DIAL5 = 20;
+final int DIAL6 = 21;
+final int DIAL7 = 22;
+final int DIAL8 = 23;
+final int SLIDER1 = 0;
+final int SLIDER2 = 1;
+final int SLIDER3 = 2;
+final int SLIDER4 = 3;
+final int SLIDER5 = 4;
+final int SLIDER6 = 5;
+final int SLIDER7 = 6;
+final int SLIDER8 = 7;
+final int BUTTON1S = 32;
+final int BUTTON1M = 48;
+final int BUTTON1R = 64;
+final int BUTTON2S = 33;
+final int BUTTON2M = 49;
+final int BUTTON2R = 65;
+final int BUTTON3S = 34;
+final int BUTTON3M = 50;
+final int BUTTON3R = 66;
+final int BUTTON4S = 35;
+final int BUTTON4M = 51;
+final int BUTTON4R = 67;
+final int BUTTON5S = 36;
+final int BUTTON5M = 52;
+final int BUTTON5R = 68;
+final int BUTTON6S = 37;
+final int BUTTON6M = 53;
+final int BUTTON6R = 69;
+final int BUTTON7S = 38;
+final int BUTTON7M = 54;
+final int BUTTON7R = 70;
+final int BUTTON8S = 39;
+final int BUTTON8M = 55;
+final int BUTTON8R = 71;
+final int STOP = 42;
+final int REWIND = 43;
+final int FASTFORWARD = 44;
+final int RECORD = 45;
+final int RESET = 46;
+
+final int DIAL9 = -1;
+final int SLIDER9 = -2;
 
 final float DEFAULT_CUR_FRAMERATE = 30.0;
 final float DEFAULT_DOME_ANGVEL = 0.0;
@@ -100,7 +136,7 @@ DomeDistort dome;
 
 // animation & playback
 //ArrayList<String> anims = new ArrayList<String>();
-ProjectApiClient client = new ProjectApiClient("http://localhost:8000");
+ProjectApiClient client = new ProjectApiClient("http://localhost:5000");
 List<String> playlist = new ArrayList<String>();
 HashMap<String, ArrayList<PImage>> loaded = new HashMap<String, ArrayList<PImage>>();
 PImage[] anim_frames;
@@ -145,6 +181,13 @@ void setup()
     size(960, 540, P3D);
   }
 
+  try {
+    MongoClient mongoClient = new MongoClient();
+    DB db = mongoClient.getDB( "project" );
+  } 
+  catch (Exception e) {
+  }
+
   // Framerate set to 61, since apparently Processing's timing is sometimes
   // off and we get judder when set to 60.
   // Animation playback speed is controlled by cur_framerate.
@@ -163,15 +206,15 @@ void setup()
 
   //println(dataPath(""));
 
+  // configure nanokontrol, if it exists
+  MidiBus.list();
+  kontrol = new MidiBus(this, "SLIDER/KNOB", "CTRL");
+
   // make list of animations
   client.addDirectory(dataPath("content"));
   updatePlaylist();
   cur_anim = initial;
   nextAnim(0);
-
-  // configure nanokontrol, if it exists
-  MidiBus.list();
-  kontrol = new MidiBus(this, "SLIDER/KNOB", "CTRL");
 
   new File(dataPath("Trash")).mkdir();
   new File(dataPath("Fix")).mkdir();
@@ -249,6 +292,7 @@ void selectAnimation(String filename) {
     if (settings.get("dome_coverage") != null)
       dome_coverage = settings.get("dome_coverage");
   }
+  updateLEDs();
   started = System.currentTimeMillis() / 1000;
   client.addToHistory(filename, started, 0, 0);
   println(String.format("%d/%d %s", cur_anim, playlist.size(), filename));
@@ -340,6 +384,13 @@ void keyPressed()
 
   // fall through to move to the next animation
   nextAnim(1);
+}
+
+void updateLEDs() {
+  HashSet<String> setKeywords = client.getKeywords(playlist.get(cur_anim));
+  for (int i=0; i<KEYWORDS.length; i++) {
+    kontrol.sendControllerChange(0, LEDS[i], setKeywords.contains(KEYWORDS[i]) ? 127 : 0);
+  }
 }
 
 // midi input callback
@@ -454,30 +505,37 @@ void controllerChange(int channel, int number, int value) {
     }
     break;
   default:
+    int index = java.util.Arrays.binarySearch(LEDS, number);
+    if (value > 0 && index >= 0 && index < KEYWORDS.length) {
+      client.toggleKeyword(playlist.get(cur_anim), KEYWORDS[index]);
+      updateLEDs();
+    }
     break;
   }
+  /*
   if (value > 0 && number >= BUTTON1H && number <= BUTTON9H) {
-    String keyword = KEYWORDS[number - BUTTON1H];
-    println("Adding keyword " + keyword);
-    client.setKeyword(playlist.get(cur_anim), keyword, true);
-    return;
-  }
-  if (value > 0 && number >= BUTTON1L && number <= BUTTON9L) {
-    String keyword = KEYWORDS[number - BUTTON1L];
-    println("Removing keyword " + keyword);
-    client.setKeyword(playlist.get(cur_anim), keyword, false);
-    return;
-  }
-  if (value > 0 && number >= BUTTON1HSCENE2 && number <= BUTTON9HSCENE2) {
-    String keyword = KEYWORDS[number - BUTTON1HSCENE2];
-    client.selectKeyword(keyword, true);
-    return;
-  }
-  if (value > 0 && number >= BUTTON1LSCENE2 && number <= BUTTON9LSCENE2) {
-    String keyword = KEYWORDS[number - BUTTON1LSCENE2];
-    client.selectKeyword(keyword, false);
-    return;
-  }
+   String keyword = KEYWORDS[number - BUTTON1H];
+   println("Adding keyword " + keyword);
+   client.setKeyword(playlist.get(cur_anim), keyword, true);
+   return;
+   }
+   if (value > 0 && number >= BUTTON1L && number <= BUTTON9L) {
+   String keyword = KEYWORDS[number - BUTTON1L];
+   println("Removing keyword " + keyword);
+   client.setKeyword(playlist.get(cur_anim), keyword, false);
+   return;
+   }
+   if (value > 0 && number >= BUTTON1HSCENE2 && number <= BUTTON9HSCENE2) {
+   String keyword = KEYWORDS[number - BUTTON1HSCENE2];
+   client.selectKeyword(keyword, true);
+   return;
+   }
+   if (value > 0 && number >= BUTTON1LSCENE2 && number <= BUTTON9LSCENE2) {
+   String keyword = KEYWORDS[number - BUTTON1LSCENE2];
+   client.selectKeyword(keyword, false);
+   return;
+   }
+   */
 }
 
 // stretches an image over the entire target canvas
