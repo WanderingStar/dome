@@ -4,6 +4,8 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Vector;
+import java.util.regex.*;
+import java.util.*;
 
 int refresh = 60;
 boolean shuffle = true;
@@ -135,9 +137,8 @@ PGraphics src, targ;
 DomeDistort dome;
 
 // animation & playback
-//ArrayList<String> anims = new ArrayList<String>();
-ProjectApiClient client = new ProjectApiClient("http://localhost:5000");
-List<String> playlist = new ArrayList<String>();
+Pattern idGifPattern = Pattern.compile("post_(\\d{3,}).*\\.gif$");
+ArrayList<String> playlist = new ArrayList<String>();
 HashMap<String, ArrayList<PImage>> loaded = new HashMap<String, ArrayList<PImage>>();
 PImage[] anim_frames;
 int cur_anim = 0;
@@ -181,13 +182,6 @@ void setup()
     size(960, 540, P3D);
   }
 
-  try {
-    MongoClient mongoClient = new MongoClient();
-    DB db = mongoClient.getDB( "project" );
-  } 
-  catch (Exception e) {
-  }
-
   // Framerate set to 61, since apparently Processing's timing is sometimes
   // off and we get judder when set to 60.
   // Animation playback speed is controlled by cur_framerate.
@@ -211,8 +205,7 @@ void setup()
   kontrol = new MidiBus(this, "SLIDER/KNOB", "CTRL");
 
   // make list of animations
-  client.addDirectory(dataPath("content"));
-  updatePlaylist();
+  addDirectory(dataPath("content"));
   cur_anim = initial;
   nextAnim(0);
 
@@ -220,20 +213,21 @@ void setup()
   new File(dataPath("Fix")).mkdir();
 }
 
-void updatePlaylist() {
-  List<String> nextPlaylist = client.updatePlaylist();
-  if (nextPlaylist != null) {
-    if (nextPlaylist.size() > 0) {
-      println("playlist updated");
-      playlist = nextPlaylist;
-      if (shuffle) {
-        Collections.shuffle(playlist);
-      }
-      cur_anim = 0;
-    } else {
-      println("playlist is empty. not updating");
+public void addDirectory(String path) {
+  println("adding content from " + path);
+  File dir = new File(path);
+  int i = 0;
+  for (String filename : dir.list ()) {
+    String filepath = path + "/" + filename;
+    Matcher m = idGifPattern.matcher(filename);
+    if (m.find()) {
+      playlist.add(filepath);
+      i++;
+    } else if (new File(filepath).isDirectory()) {
+      addDirectory(filepath);
     }
   }
+  println("Found " + i + " images in " + path);
 }
 
 void loadAnimations() {
@@ -270,31 +264,8 @@ void selectAnimation(String filename) {
   cur_frame = 0;
   cur_floatframe = 0.0;
   reps = 0;
-  HashMap<String, Float> settings = client.getSettings(filename);
-  if (settings != null) {
-    //println("Settings:" + settings);
-    if (settings.get("cur_framerate") != null) {
-      println(settings.get("cur_framerate"));
-      println(cur_framerate);
-      cur_framerate = settings.get("cur_framerate");
-      println(cur_framerate);
-    }
-    if (settings.get("dome_angvel") != null)
-      dome_angvel = settings.get("dome_angvel");
-    if (settings.get("hue_shift_deg") != null)
-      hue_shift_deg = settings.get("hue_shift_deg");
-    if (settings.get("sat_scale") != null) 
-      sat_scale = settings.get("sat_scale");
-    if (settings.get("val_scale") != null)
-      val_scale = settings.get("val_scale");
-    if (settings.get("invert") != null)
-      invert = settings.get("invert");
-    if (settings.get("dome_coverage") != null)
-      dome_coverage = settings.get("dome_coverage");
-  }
-  updateLEDs();
+
   started = System.currentTimeMillis() / 1000;
-  client.addToHistory(filename, started, 0, 0);
   println(String.format("%d/%d %s", cur_anim, playlist.size(), filename));
 }
 
@@ -310,11 +281,9 @@ void nextAnim(int num) {
   } else {
     cur_anim = bound(cur_anim);
   }
-  updatePlaylist();
   selectAnimation(playlist.get(cur_anim));
   HashSet<String> adjacent = new HashSet<String>(4);
   for (int i = cur_anim - 2; i < cur_anim + 3; i++) {
-    // print(bound(i) + " ");
     adjacent.add(playlist.get(bound(i)));
   }
   synchronized(loaded) {
@@ -378,19 +347,12 @@ void keyPressed()
   }
   if (key >= '1' && key <= '9') {
     String keyword = KEYWORDS[((int) key) - 49];
-    client.toggleKeyword(playlist.get(cur_anim), keyword);
+    // client.toggleKeyword(playlist.get(cur_anim), keyword);
     return;
   }
 
   // fall through to move to the next animation
   nextAnim(1);
-}
-
-void updateLEDs() {
-  HashSet<String> setKeywords = client.getKeywords(playlist.get(cur_anim));
-  for (int i=0; i<KEYWORDS.length; i++) {
-    kontrol.sendControllerChange(0, LEDS[i], setKeywords.contains(KEYWORDS[i]) ? 127 : 0);
-  }
 }
 
 // midi input callback
@@ -461,7 +423,6 @@ void controllerChange(int channel, int number, int value) {
   case RESET:
     if (value > 0)
     {
-
       cur_framerate = DEFAULT_CUR_FRAMERATE;
       dome_angvel = DEFAULT_DOME_ANGVEL;
       hue_shift_deg = DEFAULT_HUE_SHIFT_DEG;
@@ -471,30 +432,6 @@ void controllerChange(int channel, int number, int value) {
       //dome_coverage = DEFAULT_DOME_COVERAGE;
       refresh = DEFAULT_REFRESH;
       dome_rotation = DEFAULT_ROTATION;
-    }
-    break;
-  case RECORD:
-    if (value > 0)
-    {
-      HashMap<String, Float> settings = new HashMap<String, Float>();
-      if (cur_framerate != DEFAULT_CUR_FRAMERATE)
-        settings.put("cur_framerate", cur_framerate);
-      if (dome_angvel != DEFAULT_DOME_ANGVEL)
-        settings.put("dome_angvel", dome_angvel);
-      if (hue_shift_deg != DEFAULT_HUE_SHIFT_DEG)
-        settings.put("hue_shift_deg", hue_shift_deg);
-      if (sat_scale != DEFAULT_SAT_SCALE)
-        settings.put("sat_scale", sat_scale);
-      if (val_scale != DEFAULT_VAL_SCALE)
-        settings.put("val_scale", val_scale);
-      if (invert != DEFAULT_INVERT)
-        settings.put("invert", invert);
-      if (dome_coverage != DEFAULT_CUR_FRAMERATE)
-        settings.put("dome_coverage", dome_coverage);
-      if (dome_rotation != DEFAULT_ROTATION && dome_angvel == 0)
-        settings.put("dome_rotation", dome_rotation);
-      //println("Settings: " + settings);
-      client.setSettings(playlist.get(cur_anim), settings);
     }
     break;
   case STOP:
@@ -507,35 +444,11 @@ void controllerChange(int channel, int number, int value) {
   default:
     int index = java.util.Arrays.binarySearch(LEDS, number);
     if (value > 0 && index >= 0 && index < KEYWORDS.length) {
-      client.toggleKeyword(playlist.get(cur_anim), KEYWORDS[index]);
-      updateLEDs();
+      //client.toggleKeyword(playlist.get(cur_anim), KEYWORDS[index]);
+      //updateLEDs();
     }
     break;
   }
-  /*
-  if (value > 0 && number >= BUTTON1H && number <= BUTTON9H) {
-   String keyword = KEYWORDS[number - BUTTON1H];
-   println("Adding keyword " + keyword);
-   client.setKeyword(playlist.get(cur_anim), keyword, true);
-   return;
-   }
-   if (value > 0 && number >= BUTTON1L && number <= BUTTON9L) {
-   String keyword = KEYWORDS[number - BUTTON1L];
-   println("Removing keyword " + keyword);
-   client.setKeyword(playlist.get(cur_anim), keyword, false);
-   return;
-   }
-   if (value > 0 && number >= BUTTON1HSCENE2 && number <= BUTTON9HSCENE2) {
-   String keyword = KEYWORDS[number - BUTTON1HSCENE2];
-   client.selectKeyword(keyword, true);
-   return;
-   }
-   if (value > 0 && number >= BUTTON1LSCENE2 && number <= BUTTON9LSCENE2) {
-   String keyword = KEYWORDS[number - BUTTON1LSCENE2];
-   client.selectKeyword(keyword, false);
-   return;
-   }
-   */
 }
 
 // stretches an image over the entire target canvas
