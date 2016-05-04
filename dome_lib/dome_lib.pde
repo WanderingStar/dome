@@ -17,7 +17,7 @@ String[] KEYWORDS = {
   "breathing", "falling", "organic", "blinky", "creepy"
 };
 
-final float DEFAULT_CUR_FRAMERATE = 30.0;
+final float DEFAULT_CUR_FRAMERATE = 15.0;
 final float DEFAULT_DOME_ANGVEL = 0.0;
 final float DEFAULT_HUE_SHIFT_DEG = 0.0;
 final float DEFAULT_SAT_SCALE = 1.0;
