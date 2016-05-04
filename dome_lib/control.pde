@@ -516,7 +516,7 @@ public class XTouchMidi extends Controller
   }
 
   public void refresh() {
-    setDialLeds(DIAL8, MODE_SINGLE, map(dome_rotation, 0.0, 2.0*PI, 0, 1));
+    refreshDials();
   }
 }
 
