@@ -30,7 +30,7 @@ final int DEFAULT_REFRESH = 60;
 // dome distortion
 PGraphics src, targ;
 DomeDistort dome;
-Controller control;
+ArrayList<Controller> controls = new ArrayList<Controller>();
 
 // animation & playback
 Pattern idGifPattern = Pattern.compile("post_(\\d{3,}).*\\.gif$");
@@ -107,9 +107,17 @@ void setup()
 
   // configure controller
   MidiBus.list();
+  String[] inputs = MidiBus.availableInputs();
+  Arrays.sort(inputs);
   //control = new NanoKontrol1();
+  if (Arrays.binarySearch(inputs, "SLIDER/KNOB") > 0) {
+    controls.add(new NanoKontrol2());
+  }
   //control = new NanoKontrol2();
-  control = new XTouchMidi();
+  //control = new XTouchMidi();
+  if (Arrays.binarySearch(inputs, "X-TOUCH MINI") > 0) {
+    controls.add(new XTouchMidi());
+  }
 
   // make list of animations
   addDirectory(dataPath("content"));
@@ -331,7 +339,9 @@ void draw()
   // call the controller's refresh callback every 0.1s
   if (millis() - last_control_refresh > 100)
   {
-    control.refresh();
+    for (Controller control : controls) {
+      control.refresh();
+    }
     last_control_refresh = millis();
   }
 
