@@ -229,7 +229,7 @@ void keyPressed()
     return;
   }
   if (key == 'g') {
-    selectAnimation(dataPath("polargrid_post_000-0.gif"));
+    selectAnimation(dataPath("000polargrid.gif"));
     cur_anim--;
     return;
   }
@@ -303,7 +303,7 @@ void draw()
     dome_rotation += 2.0*PI;
   else if (dome_rotation > 2.0*PI)
     dome_rotation -= 2.0*PI;
-    
+
   // update texture params
   dome.setTexRotation(dome_rotation);
   dome.setTexExtent(dome_coverage);
@@ -335,7 +335,7 @@ void draw()
     imageMode(CORNER);
     image(targ, 0, 0);
   }
-  
+
   // call the controller's refresh callback every 0.1s
   if (millis() - last_control_refresh > 100)
   {
