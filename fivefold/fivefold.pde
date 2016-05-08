@@ -20,7 +20,7 @@ final float DEFAULT_ROTATION = 0.0;
 final int DEFAULT_REFRESH = 60;
 
 // dome distortion
-PGraphics src, targ;
+PGraphics fifth, frame, targ;
 DomeDistort dome;
 ArrayList<Controller> controls = new ArrayList<Controller>();
 
@@ -70,13 +70,14 @@ void setup()
   frameRate(61);
 
   // set up source buffer for the actual frame data
-  src = createGraphics(1024, 1024, P3D);
+  fifth = createGraphics(1024, 1024, P3D);
+  frame = createGraphics(1024, 1024, P3D);
 
   // set up target buffer to render into
   targ = createGraphics(width, height, P3D);
 
   // create and configure the distortion object
-  dome = new DomeDistort(targ, src);
+  dome = new DomeDistort(targ, frame);
   dome.setTexExtent(dome_coverage); // set to < 1.0 to shrink towards center of dome
   dome.setTexRotation(dome_rotation); // set to desired rotation angle in radians
 
@@ -86,12 +87,10 @@ void setup()
   MidiBus.list();
   String[] inputs = MidiBus.availableInputs();
   Arrays.sort(inputs);
-  //control = new NanoKontrol1();
   if (Arrays.binarySearch(inputs, "SLIDER/KNOB") > 0) {
+    //controls.add(new NanoKontrol1());
     controls.add(new NanoKontrol2());
   }
-  //control = new NanoKontrol2();
-  //control = new XTouchMidi();
   if (Arrays.binarySearch(inputs, "X-TOUCH MINI") > 0) {
     controls.add(new XTouchMidi());
   }
@@ -108,10 +107,12 @@ void keyPressed()
     return;
   }
   if (key == 'l') {
+    println("line");
     line_mode = !line_mode;
     return;
   }
   if (key == 'i') {
+    println("img");
     img_mode = !img_mode;
     return;
   }
@@ -124,25 +125,25 @@ void keyPressed()
   }
 }
 
-// stretches an image over the entire target canvas
-void drawFullscreenQuad(PGraphics t, PImage i)
-{
-  float img_scale = max((float)t.width / (float)i.width, (float)t.height / (float)i.height);
-  t.imageMode(CENTER);
-  t.image(i, t.width/2, t.height/2, i.width * img_scale, i.height * img_scale);
-}
-
-void drawFrame(PGraphics g) {
-  g.beginDraw();
-  g.background(0);
-
-  g.endDraw();
+void drawFifth(PGraphics g) {
+  g.fill(153);
+  g.ellipse(frameCount % (g.width/2),0, 500,500);
 }
 
 void draw()
 {
   // draw into source texture
-  drawFrame(src);
+  frame.beginDraw();
+  frame.background(0);
+  frame.pushMatrix();
+  frame.translate(frame.width/2, frame.height/2);
+  drawFifth(frame);
+  for (int r=1; r<5; r++) {
+    frame.rotate(TWO_PI/5.0);
+    drawFifth(frame);
+  }
+  frame.popMatrix();
+  frame.endDraw();
 
   // animate rotating dome
   dome_rotation += dome_angvel / 60.0;
@@ -170,7 +171,7 @@ void draw()
   {
     // just blit source to target in image mode
     imageMode(CENTER);
-    image(src, width/2, height/2, height, height);
+    image(frame, width/2, height/2, height, height);
   } else
   {
     // do actual distortion in regular mode
@@ -182,7 +183,6 @@ void draw()
     imageMode(CORNER);
     image(targ, 0, 0);
   }
-
   // call the controller's refresh callback every 0.1s
   if (millis() - last_control_refresh > 100)
   {
