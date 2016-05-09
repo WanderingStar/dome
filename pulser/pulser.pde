@@ -7,59 +7,35 @@ import java.util.regex.*;
 import java.util.*;
 
 boolean present = false;
-int refresh = 60;
 
-final float DEFAULT_CUR_FRAMERATE = 15.0;
-final float DEFAULT_DOME_ANGVEL = 0.0;
-final float DEFAULT_HUE_SHIFT_DEG = 0.0;
-final float DEFAULT_SAT_SCALE = 1.0;
-final float DEFAULT_VAL_SCALE = 1.0;
-final float DEFAULT_INVERT = 0.0;
 final float DEFAULT_DOME_COVERAGE = 0.9;
-final float DEFAULT_ROTATION = 0.0;
-final int DEFAULT_REFRESH = 60;
 
+
+HashMap<String, Float> config = new HashMap<String, Float>();
 final String SECTIONS = "sections";
-final String FRAMES = "frames";
 final String REPEAT = "repeat";
 
 // dome distortion
 PGraphics frame, targ;
 DomeDistort dome;
-ArrayList<Controller> controls = new ArrayList<Controller>();
+NanoKontrol2 control;
 
-float cur_framerate = DEFAULT_CUR_FRAMERATE; // can be fractional or negative
 int last_control_refresh = 0;
+int start = 0; // millis
+int lastCall = 0;
 
 // mode flags
 boolean line_mode = false; // just draws a vertical line, for setup
 boolean grid_mode = false; // just draws polargrid.png, for setup
 boolean img_mode  = false; // dump raw image to screen, no distortion
 
-// color params
-float hue_shift_deg = DEFAULT_HUE_SHIFT_DEG;
-float sat_scale = DEFAULT_SAT_SCALE;
-float val_scale = DEFAULT_VAL_SCALE;
-float invert = DEFAULT_INVERT;
-
 // dome mapping params
-float dome_rotation = 0.0; // current rotation of dome (radians)
-float dome_angvel = DEFAULT_DOME_ANGVEL; // rotation speed of dome, in rad / s
 float dome_coverage = DEFAULT_DOME_COVERAGE; // radial extent of dome covered by texture
 
-HashMap<String, Float> config = new HashMap<String, Float>();
 
 void resetDefaults() {
-  cur_framerate = DEFAULT_CUR_FRAMERATE;
-  dome_angvel = DEFAULT_DOME_ANGVEL;
-  hue_shift_deg = DEFAULT_HUE_SHIFT_DEG;
-  sat_scale = DEFAULT_SAT_SCALE;
-  val_scale = DEFAULT_VAL_SCALE;
-  invert = DEFAULT_INVERT;
   dome_coverage = DEFAULT_DOME_COVERAGE;
-  refresh = DEFAULT_REFRESH;
-  config.put(SECTIONS, 5.0);
-  config.put(FRAMES, 1000.0);
+  config.put(REPEAT, 5000.0); // millis
 }
 
 void settings() {
@@ -72,13 +48,12 @@ void settings() {
 
 void setup()
 {
-  // Framerate set to 61, since apparently Processing's timing is sometimes
-  // off and we get judder when set to 60.
-  // Animation playback speed is controlled by cur_framerate.
-  frameRate(61);
+  frameRate(60);
 
   // set up source buffer for the actual frame data
-  frame = createGraphics(2048, 2048, P3D);
+  frame = createGraphics(2048, 2048);
+  frame.ellipseMode(CENTER);
+  frame.shapeMode(CENTER);
 
   // set up target buffer to render into
   targ = createGraphics(width, height, P3D);
@@ -86,7 +61,6 @@ void setup()
   // create and configure the distortion object
   dome = new DomeDistort(targ, frame);
   dome.setTexExtent(dome_coverage); // set to < 1.0 to shrink towards center of dome
-  dome.setTexRotation(dome_rotation); // set to desired rotation angle in radians
 
   //println(dataPath(""));
 
@@ -94,17 +68,10 @@ void setup()
 
   // configure controller
   MidiBus.list();
-  String[] inputs = MidiBus.availableInputs();
-  Arrays.sort(inputs);
-  if (Arrays.binarySearch(inputs, "SLIDER/KNOB") > 0) {
-    //controls.add(new NanoKontrol1());
-    controls.add(new NanoKontrol2());
-  }
-  if (Arrays.binarySearch(inputs, "X-TOUCH MINI") > 0) {
-    controls.add(new XTouchMidi());
-  }
+  control = new NanoKontrol2(config);
 
   resetDefaults();
+  start = millis();
 }
 
 // keyboard callback handler
@@ -134,89 +101,126 @@ void keyPressed()
   }
 }
 
-class Pulse {
-  PShape s = createShape(RECT, 0, 0, 100, 100);
+class Pulse implements Comparable {
+  int time = 0;
+  PShape s = frame.createShape(RECT, 0, 0, 100, 100);
   color c = color(255, 255, 255);
   float theta = 0.0; // 0..TWO_PI
   float dTheta = 0.0;
   float radius = 0.0; // 1.0 = full frame
   float dRadius = 1.0/300.0;
-  float width = 100;
+  float width = 10;
 
   void drawPulse(PGraphics g) {
     g.pushMatrix();
     g.rotate(theta);
     float size = g.width * radius;
+    s.setStroke(1);
+    g.fill(0, 0, 127, 127);
+    g.ellipse(0, 0, size, size);
+    s.setFill(0, 0);
     s.setStroke(c);
-    s.setFill(0);
-    s.setStrokeCap(ROUND);
+    s.setStrokeCap(PROJECT);
+    //s.setStrokeJoin(MITER);
     s.setStrokeWeight(width);
-    g.shape(s, -size/2, -size/2, size, size);
+    g.shapeMode(CORNERS);
+    g.shape(s, 0,0, size,size);
     theta += dTheta % TWO_PI;
     radius += dRadius;
-    if (radius > 2.0) {
-      radius = 0.0;
-    }
     g.popMatrix();
+  }
+
+  int compareTo(Object other) {
+    return 0;
+  }
+
+  int compareTo(Pulse other) {
+    return time - other.time;
   }
 }
 
 class Ring extends Pulse {
   public Ring() {
-    s = createShape(ELLIPSE, 50, 50, 100,100);
+    PShape ring = frame.createShape(ELLIPSE, 0, 0, 100, 100);
+    println(ring.width + ", " + ring.height);
+    ring.width = 100;
+    ring.height = 100;
+    println(ring.width + ", " + ring.height);
+    s = ring;
+  }
+}
+
+class Polygon extends Pulse {
+  public Polygon(int sides) {
+    PShape polygon = frame.createShape();
+    float theta = TWO_PI / sides;
+    polygon.beginShape();
+    polygon.noFill();
+    for (int i=0; i<sides; i++) {
+      polygon.vertex(100 * cos(theta * i), 100 * sin(theta * i));
+    }
+    polygon.endShape(CLOSE);
+    println(polygon.width + ", " + polygon.height);
+    polygon.width = 100;
+    polygon.height = 100;
+    println(polygon.width + ", " + polygon.height);
+
+    s = polygon;
   }
 }
 
 ArrayList<Pulse> pulses = new ArrayList<Pulse>();
 
-void drawFrame(PGraphics g) {
-  frame.pushMatrix();
-  frame.translate(frame.width/2, frame.height/2);
+void drawFrame(PGraphics g, int progress, int lastCall) {
+  g.beginDraw();
+  g.background(0);
+  g.pushMatrix();
+  g.translate(g.width/2, g.height/2);
   synchronized (pulses) {
     for (Pulse p : pulses) {
-      p.drawPulse(frame);
+      // if this pulse should appear at this point in the cycle, set it up to appear
+      if (p.time > lastCall && p.time <= progress) {
+        p.radius = 0.0;
+      }
+      p.drawPulse(g);
     }
   }
-  frame.popMatrix();
+  g.popMatrix();
+  g.endDraw();
 }
 
 void draw()
 {
-  // draw into source texture
-  frame.beginDraw();
-  frame.background(0);
-  drawFrame(frame);
-  frame.endDraw();
+  int progress = millis() - start;
+  // reset every repeat millis
+  if (progress > config.get(REPEAT)) {
+    start = millis();
+    progress = 0;
+    lastCall = 0;
+    control.kontrol.sendControllerChange(0, control.CYCLE, 127);
+  } else {
+    control.kontrol.sendControllerChange(0, control.CYCLE, 0);
+  }
 
-  // animate rotating dome
-  dome_rotation += dome_angvel / 60.0;
-  if (dome_rotation < 0.0)
-    dome_rotation += 2.0*PI;
-  else if (dome_rotation > 2.0*PI)
-    dome_rotation -= 2.0*PI;
+  // draw into source texture
+  drawFrame(frame, progress, lastCall);
+  lastCall = progress;
 
   // update texture params
-  dome.setTexRotation(dome_rotation);
   dome.setTexExtent(dome_coverage);
-
-  // update color transform
-  dome.setColorTransformHSVShiftInvert(hue_shift_deg, sat_scale, val_scale, invert);
 
   // ready to draw
   background(0);
 
-  if (line_mode)
-  {
+  if (line_mode) {
     // override image if we're in line mode, just draw a line
     stroke(255);
     line(width/2, 0, width/2, height);
-  } else if (img_mode)
-  {
+  } else if (img_mode) {
     // just blit source to target in image mode
     imageMode(CENTER);
     image(frame, width/2, height/2, height, height);
-  } else
-  {
+  } else {
     // do actual distortion in regular mode
 
     // distort into target image
@@ -225,13 +229,5 @@ void draw()
     // draw distorted image to screen
     imageMode(CORNER);
     image(targ, 0, 0);
-  }
-  // call the controller's refresh callback every 0.1s
-  if (millis() - last_control_refresh > 100)
-  {
-    for (Controller control : controls) {
-      control.refresh();
-    }
-    last_control_refresh = millis();
   }
 }
