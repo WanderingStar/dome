@@ -195,7 +195,7 @@ public class NanoKontrol2 extends Controller
       p.c = color(dials[0], dials[1], dials[2], 240);
       p.dRadius = max(1.0/300.0, sliders[0]/2550.0);
       p.dTheta = sliders[1]/255.0 * PI;
-      p.width = number > 63 ? 64 : number > 47 ? 32 : 16;
+      p.width = number > 63 ? 32 : number > 47 ? 16 : 8;
       print("Pulse color(" + hue(p.c) + " dR " + p.dRadius + " dT " + p.dTheta);
     }
   }

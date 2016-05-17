@@ -116,8 +116,6 @@ class Pulse implements Comparable {
     g.rotate(theta);
     float size = g.width * radius;
     s.setStroke(1);
-    g.fill(0, 0, 127, 127);
-    g.ellipse(0, 0, size, size);
     s.setFill(0, 0);
     s.setStroke(c);
     s.setStrokeCap(PROJECT);
@@ -157,7 +155,7 @@ class Polygon extends Pulse {
     polygon.beginShape();
     polygon.noFill();
     for (int i=0; i<sides; i++) {
-      polygon.vertex(100 * cos(theta * i), 100 * sin(theta * i));
+      polygon.vertex(50 * cos(theta * i), 50 * sin(theta * i));
     }
     polygon.endShape(CLOSE);
     println(polygon.width + ", " + polygon.height);
@@ -230,4 +228,6 @@ void draw()
     imageMode(CORNER);
     image(targ, 0, 0);
   }
+  
+  println(frameRate);
 }
