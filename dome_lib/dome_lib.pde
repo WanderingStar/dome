@@ -60,10 +60,6 @@ float dome_rotation = 0.0; // current rotation of dome (radians)
 float dome_angvel = DEFAULT_DOME_ANGVEL; // rotation speed of dome, in rad / s
 float dome_coverage = DEFAULT_DOME_COVERAGE; // radial extent of dome covered by texture
 
-boolean sketchFullScreen() {
-  return present;
-}
-
 void resetDefaults() {
   cur_framerate = DEFAULT_CUR_FRAMERATE;
   dome_angvel = DEFAULT_DOME_ANGVEL;
@@ -75,18 +71,16 @@ void resetDefaults() {
   refresh = DEFAULT_REFRESH;
 }
 
+void settings() {
+  if (present) {
+    fullScreen(P3D);
+  } else {
+    size(1280, 720, P3D);
+  }
+}
+
 void setup()
 {
-  if (present) {
-    size(displayWidth, displayHeight, P3D);
-  } else {
-    //size(1024, 1024, P3D);
-    //size(1920, 1080, P3D);
-    size(1280, 720, P3D);
-    //size(854, 480, P3D);
-    //size(960, 540, P3D);
-  }
-
   // Framerate set to 61, since apparently Processing's timing is sometimes
   // off and we get judder when set to 60.
   // Animation playback speed is controlled by cur_framerate.
@@ -379,4 +373,3 @@ void moveFile(String folder) {
     print(e);
   }
 }
-
