@@ -9,7 +9,7 @@ import java.util.*;
 
 int refresh = 60;
 boolean shuffle = true;
-int initial = 0;
+int initial = 2310;
 boolean present = false;
 
 String[] KEYWORDS = { 
@@ -119,13 +119,29 @@ void setup()
     controls.add(new XTouchMidi());
   }
 
-  // make list of animations
-  addDirectory(dataPath("content"));
+  // load pre-created list of animations
+  addIndex(dataPath("content.dat"));
+  if (playlist.size() == 0) { 
+    // make list of animations
+    addDirectory(dataPath("Content"));
+  }
   cur_anim = initial;
   nextAnim(0);
 
   new File(dataPath("Trash")).mkdir();
   new File(dataPath("Fix")).mkdir();
+}
+
+public void addIndex(String path) {
+  int i = 0;
+  for (String s : loadStrings (path)) {
+    Matcher m = idGifPattern.matcher(path);
+    if (m.find()) {
+      playlist.add(path);
+      i++;
+    }
+  }
+  println("Found " + i + " images in " + path);
 }
 
 public void addDirectory(String path) {
