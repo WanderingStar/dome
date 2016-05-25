@@ -1,4 +1,4 @@
-import themidibus.*;
+import themidibus.*; //<>//
 import gifAnimation.*;
 import java.io.File;
 import java.nio.file.Files;
@@ -9,7 +9,7 @@ import java.util.*;
 
 int refresh = 60;
 boolean shuffle = true;
-int initial = 2310;
+int initial = 0;
 boolean present = false;
 
 String[] KEYWORDS = { 
@@ -17,7 +17,7 @@ String[] KEYWORDS = {
   "breathing", "falling", "organic", "blinky", "creepy"
 };
 
-final float DEFAULT_CUR_FRAMERATE = 15.0;
+final float DEFAULT_CUR_FRAMERATE = 10.0;
 final float DEFAULT_DOME_ANGVEL = 0.0;
 final float DEFAULT_HUE_SHIFT_DEG = 0.0;
 final float DEFAULT_SAT_SCALE = 1.0;
@@ -113,12 +113,12 @@ void setup()
     controls.add(new XTouchMidi());
   }
 
-  // load pre-created list of animations
-  addIndex(dataPath("content.dat"));
-  if (playlist.size() == 0) { 
-    // make list of animations
-    addDirectory(dataPath("Content"));
+  // make list of animations
+  addDirectory(dataPath("Content"));
+  if (shuffle) {
+    Collections.shuffle(playlist, new Random(System.nanoTime()));
   }
+    
   cur_anim = initial;
   nextAnim(0);
 
@@ -163,8 +163,15 @@ void loadAnimations() {
         try {
           // println("Loading " + filename + "...");
           PImage[] frames = Gif.getPImages(this, filename);
+          // println("Loaded " + filename + ". frames:" + frames);
+          for (PImage frame : frames) {
+            if (frame == null || frame.width == 0) {
+              println("Animation contained a null frame " + filename);
+              File current = new File(filename);
+              Files.move(current.toPath(), new File(dataPath("Trash/"+current.getName())).toPath()); //<>//
+            }
+          }
           loaded.put(filename, new ArrayList<PImage>(Arrays.asList(frames)));
-          // println("Loaded " + filename + ".");
         } 
         catch (Exception e) {
           println("Failed to load " + filename + ": " + e.getMessage());
@@ -275,15 +282,15 @@ void keyPressed()
 }
 
 // stretches an image over the entire target canvas
-void drawFullscreenQuad(PGraphics t, PImage i)
-{
-  float img_scale = max((float)t.width / (float)i.width, (float)t.height / (float)i.height);
-  t.imageMode(CENTER);
-  t.image(i, t.width/2, t.height/2, i.width * img_scale, i.height * img_scale);
+void drawFullscreenQuad(PGraphics t, PImage i) {
+    float img_scale = max((float)t.width / (float)i.width, (float)t.height / (float)i.height);
+    t.imageMode(CENTER);
+    t.image(i, t.width/2, t.height/2, i.width * img_scale, i.height * img_scale);
 }
 
 void draw()
 {
+   try {
   // draw pattern into source texture
   // also, blend together adjacent frames (looks better at slow speeds)
   src.beginDraw();
@@ -338,7 +345,7 @@ void draw()
   {
     // do actual distortion in regular mode
 
-      // distort into target image
+    // distort into target image
     dome.update();
 
     // draw distorted image to screen
@@ -359,6 +366,11 @@ void draw()
     if (started + refresh < System.currentTimeMillis() / 1000) {
       nextAnim(1);
     }
+  }
+  } 
+  catch(NullPointerException e) {
+    println("Animation contained a null frame"); //<>//
+    moveFile("Trash");
   }
 }
 
