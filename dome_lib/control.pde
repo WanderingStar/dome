@@ -160,8 +160,8 @@ public class NanoKontrol1 extends Controller
       break;
     case DIAL9:
     case SLIDER9:
-      refresh = (int) lerp(10, 300, fval);
-      println("Refresh rate: "+refresh);
+      duration = (int) lerp(10, MAXIMUM_DURATION, fval);
+      println("Animation Duration: "+duration);
       break;
     case REWIND:
       if (value > 0)
@@ -185,7 +185,7 @@ public class NanoKontrol1 extends Controller
       }
       break;
     default:
-      break;
+      super.controllerChange(channel, number, value);
     }
   }
 }
@@ -298,8 +298,8 @@ public class NanoKontrol2 extends Controller
       break;
     case DIAL9:
     case SLIDER9:
-      refresh = (int) lerp(10, 300, fval);
-      println("Refresh rate: "+refresh);
+      duration = (int) lerp(10, MAXIMUM_DURATION, fval);
+      println("Animation Duration: "+duration);
       break;
     case REWIND:
       if (value > 0)
@@ -323,7 +323,7 @@ public class NanoKontrol2 extends Controller
       }
       break;
     default:
-      break;
+      super.controllerChange(channel, number, value);
     }
   }
 }
@@ -460,7 +460,7 @@ public class XTouchMidi extends Controller
       println("Rotation: "+dome_rotation);
       break;
     default:
-      break;
+      super.controllerChange(channel, number, value);
     }
     refreshDials();
   }
@@ -504,7 +504,7 @@ public class XTouchMidi extends Controller
         dome_rotation = 0.0;
         break;
       default:
-        break;
+        super.noteOn(channel, pitch, velocity);
       }
     }
     refreshDials();
@@ -512,11 +512,12 @@ public class XTouchMidi extends Controller
 
   public void pitchBend(int channel, int bend)
   {
-    super.pitchBend(channel, bend);
+    duration = (int) lerp(MAXIMUM_DURATION, 10, (float) bend / 16256.0);
+    println("Animation Duration: "+duration);
+    //super.pitchBend(channel, bend);
   }
 
   public void refresh() {
     refreshDials();
   }
 }
-

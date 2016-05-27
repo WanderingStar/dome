@@ -7,7 +7,7 @@ import java.util.Vector;
 import java.util.regex.*;
 import java.util.*;
 
-int refresh = 60;
+int duration = 60; // how long to show any given animation
 boolean shuffle = true;
 int initial = 0;
 boolean present = false;
@@ -17,7 +17,7 @@ String[] KEYWORDS = {
   "breathing", "falling", "organic", "blinky", "creepy"
 };
 
-final float DEFAULT_CUR_FRAMERATE = 10.0;
+final float DEFAULT_CUR_FRAMERATE = 20.0;
 final float DEFAULT_DOME_ANGVEL = 0.0;
 final float DEFAULT_HUE_SHIFT_DEG = 0.0;
 final float DEFAULT_SAT_SCALE = 1.0;
@@ -25,7 +25,8 @@ final float DEFAULT_VAL_SCALE = 1.0;
 final float DEFAULT_INVERT = 0.0;
 final float DEFAULT_DOME_COVERAGE = 0.9;
 final float DEFAULT_ROTATION = 0.0;
-final int DEFAULT_REFRESH = 60;
+final int DEFAULT_DURATION = 60;
+final int MAXIMUM_DURATION = 300; // if duration is set to maximum, keep playing it indefinitely
 
 // dome distortion
 PGraphics src, targ;
@@ -68,7 +69,7 @@ void resetDefaults() {
   val_scale = DEFAULT_VAL_SCALE;
   invert = DEFAULT_INVERT;
   dome_coverage = DEFAULT_DOME_COVERAGE;
-  refresh = DEFAULT_REFRESH;
+  duration = DEFAULT_DURATION;
 }
 
 void settings() {
@@ -87,7 +88,7 @@ void setup()
   frameRate(61);
 
   // set up source buffer for the actual frame data
-  src = createGraphics(1024, 1024, P3D);
+  src = createGraphics(2048, 2048, P3D);
 
   // set up target buffer to render into
   targ = createGraphics(width, height, P3D);
@@ -362,8 +363,8 @@ void draw()
     last_control_refresh = millis();
   }
 
-  if (refresh < 300) {
-    if (started + refresh < System.currentTimeMillis() / 1000) {
+  if (duration < MAXIMUM_DURATION) { 
+    if (started + duration < System.currentTimeMillis() / 1000) {
       nextAnim(1);
     }
   }

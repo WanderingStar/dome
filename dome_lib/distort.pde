@@ -195,4 +195,3 @@ class DomeDistort
     return sh;
   }
 }
-
