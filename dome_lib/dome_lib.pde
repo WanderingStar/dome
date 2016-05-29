@@ -10,7 +10,7 @@ import java.util.*;
 int duration = 60; // how long to show any given animation
 boolean shuffle = true;
 int initial = 0;
-boolean present = false;
+boolean present = true;
 
 String[] KEYWORDS = { 
   "chill", "energetic", "monochrome", "colorful", "whoah", 
@@ -182,6 +182,23 @@ void loadAnimations() {
   }
 }
 
+Pattern artist1 = Pattern.compile("30000fps.com");
+Pattern artist2 = Pattern.compile("admiralpotato.tumblr.com");
+Pattern artist3 = Pattern.compile("automatagraphics.tumblr.com");
+Pattern artist4 = Pattern.compile("badcodec.tumblr.com");
+Pattern artist5 = Pattern.compile("beesandbombs.tumblr.com");
+Pattern artist6 = Pattern.compile("bigblueboo.tumblr.com");
+Pattern artist7 = Pattern.compile("dvdp.tumblr.com");
+Pattern artist8 = Pattern.compile("echophon.tumblr.com");
+Pattern artist9 = Pattern.compile("flotsam.sellingwaves.com");
+Pattern artist10 = Pattern.compile("hexeosis.tumblr.com");
+Pattern artist11 = Pattern.compile("metaglitch.tumblr.com");
+Pattern artist12 = Pattern.compile("mooooooving.com");
+Pattern artist13 = Pattern.compile("motionaddicts.com");
+Pattern artist14 = Pattern.compile("pislices.ca");
+Pattern artist15 = Pattern.compile("protobacillus.tumblr.com");
+Pattern artist16 = Pattern.compile("wavegrower.tumblr.com");
+
 void selectAnimation(String filename) {
   ArrayList<PImage> frames;
   synchronized(loaded) {
@@ -200,6 +217,41 @@ void selectAnimation(String filename) {
 
   started = System.currentTimeMillis() / 1000;
   println(String.format("%d/%d %s", cur_anim, playlist.size(), filename));
+  
+  for (Controller controller: controls) {
+        Matcher m = artist1.matcher(filename);
+        controller.setLogicalButtonLed(1, m.find());
+        m = artist2.matcher(filename);
+        controller.setLogicalButtonLed(2, m.find());
+        m = artist3.matcher(filename);
+        controller.setLogicalButtonLed(3, m.find());
+        m = artist4.matcher(filename);
+        controller.setLogicalButtonLed(4, m.find());
+        m = artist5.matcher(filename);
+        controller.setLogicalButtonLed(5, m.find());
+        m = artist6.matcher(filename);
+        controller.setLogicalButtonLed(6, m.find());
+        m = artist7.matcher(filename);
+        controller.setLogicalButtonLed(7, m.find());
+        m = artist8.matcher(filename);
+        controller.setLogicalButtonLed(8, m.find());
+        m = artist9.matcher(filename);
+        controller.setLogicalButtonLed(9, m.find());
+        m = artist10.matcher(filename);
+        controller.setLogicalButtonLed(10, m.find());
+        m = artist11.matcher(filename);
+        controller.setLogicalButtonLed(11, m.find());
+        m = artist12.matcher(filename);
+        controller.setLogicalButtonLed(12, m.find());
+        m = artist13.matcher(filename);
+        controller.setLogicalButtonLed(13, m.find());
+        m = artist14.matcher(filename);
+        controller.setLogicalButtonLed(14, m.find());
+        m = artist15.matcher(filename);
+        controller.setLogicalButtonLed(15, m.find());
+        m = artist16.matcher(filename);
+        controller.setLogicalButtonLed(16, m.find());
+  }
 }
 
 int bound(int n) {

@@ -52,6 +52,14 @@ public class Controller implements MidiListener
 
   public void refresh() {
   }
+  
+  void setButtonLed(int buttonCode, boolean on) {
+    kontrol.sendNoteOn(0, buttonCode, on ? 127 : 0);
+  }
+  
+  void setLogicalButtonLed(int button, boolean on) {
+    kontrol.sendNoteOn(0, button, on ? 127 : 0);
+  }
 }
 
 public class NanoKontrol1 extends Controller
@@ -520,4 +528,28 @@ public class XTouchMidi extends Controller
   public void refresh() {
     refreshDials();
   }
+  
+  void setLogicalButtonLed(int button, boolean on) {
+    int buttonCode = 0;
+    switch (button) {
+      case 1: buttonCode = BUTTON1H; break;
+      case 2: buttonCode = BUTTON2H; break;
+      case 3: buttonCode = BUTTON3H; break;
+      case 4: buttonCode = BUTTON4H; break;
+      case 5: buttonCode = BUTTON5H; break;
+      case 6: buttonCode = BUTTON6H; break;
+      case 7: buttonCode = BUTTON7H; break;
+      case 8: buttonCode = BUTTON8H; break;
+      case 9: buttonCode = BUTTON1L; break;
+      case 10: buttonCode = BUTTON2L; break;
+      case 11: buttonCode = BUTTON3L; break;
+      case 12: buttonCode = BUTTON4L; break;
+      case 13: buttonCode = BUTTON5L; break;
+      case 14: buttonCode = BUTTON6L; break;
+      case 15: buttonCode = BUTTON7L; break;
+      case 16: buttonCode = BUTTON8L; break;
+    }
+    kontrol.sendNoteOn(0, buttonCode, on ? 127 : 0);
+  }
+
 }
